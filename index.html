@@ -31,6 +31,20 @@
 .result-num small{display:block;font-size:.75rem}
 .card-back .card-actions{margin-top:auto}
 @media(max-width:550px){.card-gallery{grid-template-columns:repeat(auto-fill,minmax(245px,1fr))}}
+
+/* Interaction reliability: don't clip attack controls on any screen size */
+.flip-card{min-height:520px}
+.flip-inner{min-height:520px}
+.card-face{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;box-sizing:border-box}
+.card-actions{margin-top:auto;flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card-actions button,.card-face>button{min-height:44px;touch-action:manipulation}
+.card-actions button.primary{grid-column:1/-1;font-size:1.08rem;min-height:52px}
+.card-art{height:125px;min-height:125px}
+.result-grid{flex:none}
+#spellCard,#spellCard .flip-inner{min-height:500px}
+#spellCard .card-actions button.primary{grid-column:auto}
+@media(max-width:550px){.card-gallery{grid-template-columns:minmax(0,1fr)}.flip-card,.flip-inner{min-height:530px}}
+
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -48,7 +62,7 @@
 <div id="upcastArea"><label for="slot">Cast at level</label><select id="slot"></select></div>
 <div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="card-actions"><button class="primary" id="cast">✦ CAST</button><button id="flipSpell">Flip / Rules</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
-<section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
+<section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><p class="muted">These are 2014 5e reference examples. Other editions require their own rules and are not yet available.</p><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
 <section id="dice" class="panel hidden"><h2>Secure dice</h2><div class="row"><label>Count <input type="number" id="diceCount" min="1" max="100" value="1"></label><label>Faces <select id="diceSides"><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option><option selected>20</option><option>100</option></select></label><label>Modifier <input type="number" id="diceMod" min="-1000" max="1000" value="0"></label></div><button class="primary" id="rollDice">Roll</button></section>
 <section class="panel"><h2>Roll results</h2><div class="out" id="output" role="status">Choose a monster attack, spell or dice roll. The DM determines hits, targets, saving throws and damage applied.</div><button id="clear">Clear results</button></section>
 <small>Randomness: Web Crypto with rejection sampling. No automatic target selection or HP subtraction. This preview saves its monster roster locally; clearing browser storage resets it.</small>
@@ -146,9 +160,9 @@ function render(){
   inner.append(front,back);card.append(inner);root.append(card);
  }
 }
-function addMonster(){const source=monsters[Number($('monster').value)];if(!source)return;const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
+function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
 $('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);$('addcopy').onclick=()=>safe(addMonster);
-$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{const s=spells[Number($('spell').value)];if(!s){display('No verified spell selected');return}const level=s.upcast?Number($('slot').value):s.base;if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');if(!s.formula){display(s.name+': '+s.special+'\nDM adjudicates effect.');return}if(s.name==='Magic Missile'){const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));display('Magic Missile level '+level+': '+results.map((r,i)=>'Dart '+(i+1)+': '+r.total).join(' | ')+'\nDM assigns darts to targets.');return}const damage=roll(...s.formula(level));display(s.name+' level '+level+'\nDice: ['+damage.dice.join(', ')+']\nDamage: '+damage.total+' '+s.type+'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.')});
+$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{const v=$('spell').value;const s=v===''?null:spells[Number(v)];if(!s||s.edition!==edition.value){display('No verified spell selected');return}const level=s.upcast?Number($('slot').value):s.base;if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');if(!s.formula){display(s.name+': '+s.special+'\nDM adjudicates effect.');return}if(s.name==='Magic Missile'){const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));display('Magic Missile level '+level+': '+results.map((r,i)=>'Dart '+(i+1)+': '+r.total).join(' | ')+'\nDM assigns darts to targets.');return}const damage=roll(...s.formula(level));display(s.name+' level '+level+'\nDice: ['+damage.dice.join(', ')+']\nDamage: '+damage.total+' '+s.type+'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.')});
 $('rule').onchange=()=>{$('ruleText').textContent=rules[Number($('rule').value)]?.[1]||''};
 $('rollDice').onclick=()=>safe(()=>{const n=Number($('diceCount').value),s=Number($('diceSides').value),b=Number($('diceMod').value),r=roll(n,s,b);display(n+'d'+s+(b>=0?'+':'')+b+' → ['+r.dice.join(', ')+'] = '+r.total)});
 $('clear').onclick=()=>output.textContent='Results cleared.';
