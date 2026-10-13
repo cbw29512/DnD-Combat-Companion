@@ -112,6 +112,28 @@ nav.tabs button{font-size:.81rem;padding:5px 9px}
 /* Top corner controls stay unambiguous; no duplicate Copy/Remove row. */
 .card-top-tools button{display:grid;place-items:center;background:#172133;border-radius:8px;font-weight:800;color:#ffe0a0}
 .card-top-tools button:last-child{color:#ffc9c9}
+
+/* Fix short-screen clipping: attack owns a reserved final row. */
+.monster-front{display:grid;grid-template-columns:minmax(0,1fr);
+grid-template-rows:34px minmax(0,1fr) auto auto 36px 36px auto 48px;
+gap:4px;align-content:stretch;overflow:hidden}
+.monster-front .card-top-tools{min-height:0}
+.monster-front .card-top-tools button{height:34px;min-height:0}
+.monster-front .card-art{height:100%;min-height:0;max-height:none;overflow:hidden}
+.monster-front .card-name{margin:0;line-height:1.15}
+.monster-front .card-meta{margin:0;line-height:1.15}
+.monster-front select{height:36px;min-height:0;padding:4px}
+.monster-front .result-grid{margin:0;min-height:0}
+.monster-front .result-num{padding:2px;min-height:0}
+.monster-front .result-num strong{font-size:clamp(1.25rem,3.2vh,1.9rem)}
+.monster-front .card-actions{margin:0;min-height:0;display:block}
+.monster-front .card-actions button.primary{display:block;width:100%;height:48px;min-height:0;padding:5px;font-size:1.08rem}
+@media(max-height:650px){
+.monster-front{grid-template-rows:30px minmax(0,1fr) auto auto 32px 32px auto 44px;gap:3px}
+.monster-front .card-top-tools button{height:30px}
+.monster-front select{height:32px}
+.monster-front .card-actions button.primary{height:44px}
+}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -234,7 +256,7 @@ function render(){
  for(const m of roster){
   const card=document.createElement('div');card.className='flip-card';
   const inner=document.createElement('div');inner.className='flip-inner';
-  const front=document.createElement('article');front.className='card-face';
+  const front=document.createElement('article');front.className='card-face monster-front';
   const back=document.createElement('article');back.className='card-face card-back';
   const art=document.createElement('div');art.className='card-art';art.setAttribute('role','button');art.tabIndex=0;art.title='Tap artwork to show rules';art.setAttribute('aria-label','Show rules for '+m.name);art.append(makeMonsterSilhouette(m.name));art.onclick=()=>card.classList.add('flipped');art.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.classList.add('flipped')}};
   const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
