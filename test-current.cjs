@@ -207,7 +207,7 @@ test('caster concentration replaces per-caster spells but preserves another cast
   };
   const methods=vm.runInNewContext(inline.slice(start,end)+';({setConcentration,getConcentration,endConcentration,refreshConcentration})',{
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(k,v)=>storage.set(k,v)},
-    $:id=>dom[id],edition:{value:'2014'},console,display:()=>{}
+    $:id=>dom[id],edition:{value:'2014'},console:{warn:()=>{}},display:()=>{}
   });
   methods.setConcentration('2014','Caster 1','Bless',1);
   methods.setConcentration('2014','Caster 2','Moonbeam',2);
