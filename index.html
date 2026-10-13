@@ -46,6 +46,8 @@
 @media(max-width:550px){.card-gallery{grid-template-columns:minmax(0,1fr)}.flip-card,.flip-inner{min-height:530px}}
 
 .monster-silhouette{width:100%;height:100%;max-width:210px;filter:drop-shadow(0 8px 7px #0009)}
+.result-num.critical{border:2px solid #32d583;background:#124437}.result-num.critical strong{color:#a7f3d0}
+.result-num.fumble{border:2px solid #f87171;background:#52242a}.result-num.fumble strong{color:#fecaca}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -164,6 +166,7 @@ function render(){
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
   opt(select,(m.actions||[]).map((a,i)=>[String(i),a.name]));
+  const mode=document.createElement('select');mode.setAttribute('aria-label','Attack roll mode for '+m.name);opt(mode,[['normal','Normal'],['advantage','Advantage'],['disadvantage','Disadvantage']]);
   const result=document.createElement('div');result.className='result-grid';
   const hit=document.createElement('div');hit.className='result-num';hit.innerHTML='<small>TO HIT</small><strong>—</strong>';
   const damage=document.createElement('div');damage.className='result-num';damage.innerHTML='<small>DAMAGE</small><strong>—</strong>';
@@ -171,11 +174,26 @@ function render(){
   const attack=document.createElement('button');attack.className='primary';attack.textContent='⚔ ATTACK';
   attack.onclick=()=>safe(()=>{
    const a=m.actions[Number(select.value)];if(!a)throw Error('Choose an attack first');
-   const h=roll(1,20,a.toHit),d=roll(...a.dice);
-   hit.querySelector('strong').textContent=h.total;
-   damage.querySelector('strong').textContent=d.total;
+   // Attack roll mode changes only the d20 selection; damage remains a separate roll.
+   const first=secureDie(20),second=mode.value==='normal'?null:secureDie(20);
+   const natural=second===null?first:(mode.value==='advantage'?Math.max(first,second):Math.min(first,second));
+   const total=natural+a.toHit;
+   const critical=natural===20, fumble=natural===1;
+   // Standard 2014/2024 5e critical hits double damage dice, not flat modifiers.
+   // Other editions need their own verified critical rules and are not guessed here.
+   const d=roll(...a.dice);
+   const extra=critical&&['2014','2024'].includes(m.edition)?roll(a.dice[0],a.dice[1],0):null;
+   const dmg=d.total+(extra?.total||0);
+   const tag=critical?'NAT 20 — CRITICAL!':fumble?'NAT 1 — AUTOMATIC MISS':'TO HIT';
+   hit.querySelector('small').textContent=tag;
+   hit.querySelector('strong').textContent=total;
+   hit.classList.toggle('critical',critical);hit.classList.toggle('fumble',fumble);
+   damage.querySelector('strong').textContent=dmg;
    damage.querySelector('small').textContent='DAMAGE · '+a.type;
-   display(m.name+' — '+a.name+': To hit '+h.total+'; potential damage '+d.total+' '+a.type+'. DM decides outcome.');
+   const diceText=second===null?String(first):first+' / '+second+' → '+natural;
+   const damageText=extra?' ['+d.dice.join(',')+'] + crit ['+extra.dice.join(',')+'] + '+d.bonus:' ['+d.dice.join(',')+'] + '+d.bonus;
+   display(m.name+' — '+a.name+'\n'+mode.value.toUpperCase()+' d20: '+diceText+' + '+a.toHit+' = '+total+
+     (critical?'  ★ NAT 20 CRITICAL':fumble?'  ✕ NAT 1 MISS':'')+'\nDamage: '+dmg+' '+a.type+damageText);
   });
   const detail=document.createElement('button');detail.textContent='Rules';detail.onclick=()=>card.classList.add('flipped');
   const duplicate=document.createElement('button');duplicate.textContent='+ Copy';duplicate.onclick=()=>safe(()=>{
@@ -188,7 +206,7 @@ function render(){
    roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render();
   };
   const controls=document.createElement('div');controls.className='card-actions';controls.append(attack,detail,duplicate,remove);
-  front.append(art,name,stats,select,result,controls);
+  front.append(art,name,stats,select,mode,result,controls);
   const heading=document.createElement('h3');heading.className='card-name';heading.textContent=m.name+' — Rules';
   const rules=document.createElement('div');rules.className='card-meta';
   rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+'+'+a.dice[2]+' '+a.type).join('\\n');
