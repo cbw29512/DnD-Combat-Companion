@@ -583,7 +583,10 @@ const spells=[
 {edition:'2014',name:'Blight',base:4,upcast:true,formula:l=>[8+(l-4),8,0],save:'30 ft; Constitution save for half. No effect on undead or constructs. Plant creatures have disadvantage and take maximum damage on failed save (DM adjusts).',type:'necrotic'},
 {edition:'2014',name:'Circle of Death',base:6,upcast:true,formula:l=>[8+2*(l-6),6,0],save:'150 ft; 60-ft-radius sphere; Constitution save for half damage.',type:'necrotic'},
 {edition:'2014',name:'Disintegrate',base:6,upcast:true,formula:l=>[10+3*(l-6),6,40],save:'60 ft; Dexterity save prevents ALL damage on success. On failure take full force damage. Disintegration if spell reduces target to 0 HP; DM adjudicates.',type:'force'},
-{edition:'2024',name:'Fireball',base:3,upcast:true,formula:l=>[8+(l-3),6,0],save:'Dexterity saving throw; half damage on success',type:'fire'}
+{edition:'2024',name:'Fireball',base:3,upcast:true,formula:l=>[8+(l-3),6,0],save:'Dexterity saving throw; half damage on success',type:'fire'},
+{edition:'2024',name:'Magic Missile',base:1,upcast:true,formula:l=>[3+(l-1),4,1],special:'Three force darts, each 1d4+1, one extra dart per spell slot above 1st. Auto-hit; DM assigns darts to visible targets.',type:'force'},
+{edition:'2024',name:'Shield',base:1,upcast:false,special:'Reaction when hit by an attack roll or targeted by Magic Missile. +5 AC until start of next turn, including triggering attack, and no damage from Magic Missile.'},
+{edition:'2024',name:'Bless',base:1,upcast:true,concentration:true,special:'Concentration up to 1 minute. Three creatures add 1d4 to attacks and saving throws.',specialAtLevel:l=>'Concentration up to 1 minute. '+(l+2)+' creatures add 1d4 to attack rolls and saving throws.'}
 ];
 const rules=[
 ['Blinded','Cannot see; attack rolls against creature have advantage; creature attacks at disadvantage; fails checks requiring sight.'],
@@ -625,6 +628,12 @@ function makeMonsterInstance(template,id,label){
   resourceState:(template.resources||[]).map(r=>({name:r.name,max:r.max,remaining:r.max}))};
 }
 function normalizeMonsterInstance(m){
+ // In-place upgrade of encounter cards saved before limited-use resources existed.
+ if(!Array.isArray(m.resources)||!m.resources.length){
+  const base=m.name.replace(/ #\d+$/,'');
+  const template=monsters.find(t=>t.edition===m.edition&&t.name===base&&!t.homebrewId);
+  if(template?.resources?.length)m.resources=template.resources;
+ }
  const maxHp=Number.isInteger(m.maxHp)&&m.maxHp>0?m.maxHp:m.hp;
  m.maxHp=Math.min(99999,Math.max(1,maxHp));
  m.currentHp=Number.isInteger(m.currentHp)?Math.min(m.maxHp,Math.max(0,m.currentHp)):m.maxHp;
