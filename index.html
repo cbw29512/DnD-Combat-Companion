@@ -291,11 +291,34 @@ nav.tabs button{font-size:1rem;min-height:45px;padding:7px 14px}
 .combat-toolbar nav.tabs{display:flex;align-items:center;flex:1;min-width:0;gap:6px;margin:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
 .combat-toolbar nav.tabs button{flex:0 0 auto;white-space:nowrap;margin:0}
 @media(max-width:700px){.combat-toolbar{gap:5px}.combat-toolbar #edition{flex-basis:135px;min-height:41px;font-size:.86rem;padding:5px}.combat-toolbar nav.tabs{gap:4px}.combat-toolbar nav.tabs button{font-size:.85rem;min-height:41px;padding:5px 9px}}
+
+/* Laptop/tablet real-estate reset: header is the toolbar, cards are compact. */
+.app-header{display:flex;align-items:center;gap:18px;padding:8px 12px;min-height:62px}
+.app-header h1{font-size:1.05rem;white-space:nowrap;flex:none;margin:0}
+.app-header .combat-toolbar{width:auto;flex:1;min-width:0;display:flex!important;flex-direction:row!important;gap:8px}
+.app-header .combat-toolbar #edition{width:145px;flex:0 0 145px;min-height:42px}
+.app-header .combat-toolbar nav.tabs{display:flex!important;flex-wrap:nowrap!important;min-width:0;flex:1;margin:0!important;align-items:center}
+.app-header .combat-toolbar nav.tabs button{min-height:42px}
+main{gap:5px;padding:6px 10px}
+#monsters .card-gallery{align-items:flex-start;justify-content:flex-start}
+#monsters .flip-card,#monsters .flip-inner{height:min(100%,490px)!important;min-height:0!important}
+#monsters .flip-card{flex:0 0 clamp(280px,25vw,340px)}
+#monsters .monster-front{display:grid;grid-template-rows:42px minmax(75px,130px) 26px 42px 92px 52px;align-content:start;gap:7px;overflow:hidden}
+#monsters .monster-front .card-art{height:100%;min-height:0}
+#monsters .monster-front .card-top-tools{height:42px}
+#monsters .monster-front .card-meta{font-size:1rem;line-height:26px}
+#monsters .monster-front .result-grid{height:92px}
+#monsters .monster-front .result-num{display:flex;flex-direction:column;justify-content:center;gap:4px}
+#monsters .monster-front .card-actions,#monsters .monster-front .card-actions button.primary{height:52px}
+#monsters .card-back{overflow-y:auto}
+@media(max-width:850px){.app-header{gap:9px}.app-header h1{display:none}.app-header .combat-toolbar{flex:1}}
+@media(max-width:550px){#monsters .flip-card{flex-basis:min(90vw,340px)}#monsters .monster-front{grid-template-rows:38px minmax(50px,100px) 25px 40px 82px 48px;gap:5px}#monsters .flip-card,#monsters .flip-inner{height:min(100%,420px)!important}}
+@media(max-height:650px){#monsters .flip-card,#monsters .flip-inner{height:min(100%,405px)!important}#monsters .monster-front{grid-template-rows:36px minmax(50px,90px) 23px 37px 77px 45px;gap:4px}#monsters .monster-front .result-grid{height:77px}#monsters .monster-front .card-actions,#monsters .monster-front .card-actions button.primary{height:45px}}
 </style></head><body>
-<header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
+<header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
+<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav></div></header>
 <main>
 <div class="warn" id="notice">Working website preview. Edition selectors are available, but only the explicitly listed sample cards have automatic rolls. Full nine-edition catalogs are still in development.</div>
-<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav></div>
 <section id="monsters" class="panel"><h2>Encounter monsters</h2>
 <div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div>
 <h3>Encounter cards</h3><div id="roster" class="card-gallery" aria-live="polite"></div><div id="actions" class="hidden"></div>
