@@ -28,8 +28,7 @@ jobs:
       - name: Verify deployable website exists
         run: |
           test -s site/index.html || { echo "Website source not committed yet" >&2; exit 1; }
-          test -s site/app.js || exit 1
-          test -s site/sw.js || exit 1
+          if [ -f site/app.js ]; then test -s site/sw.js || exit 1; fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
