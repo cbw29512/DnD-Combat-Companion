@@ -78,7 +78,7 @@
     }
     return {
       homebrewId: text(raw.homebrewId, 70) || crypto.randomUUID(),
-      edition: editionValue(raw.edition), name, base, upcast, hasDamage, customDice,
+      edition: editionValue(raw.edition), name, base, upcast, concentration:Boolean(raw.concentration), hasDamage, customDice,
       type: text(raw.type, 40) || 'untyped',
       save: text(raw.save, 750), special: text(raw.special, 2500)
     };
@@ -227,6 +227,7 @@
     }
     return validateSpell({
       ...common, base: $('hb-level').value, upcast: $('hb-upcast').checked,
+      concentration: $('hb-concentration').checked,
       hasDamage: $('hb-damage-enabled').checked,
       customDice: { count: $('hb-dice-count').value, sides: $('hb-dice-sides').value,
         bonus: $('hb-dice-bonus').value, perLevel: $('hb-dice-extra').value },
@@ -269,6 +270,7 @@
       $('hb-routines').replaceChildren(); (entry.multiattacks||[]).forEach(routineRow);
     } else {
       $('hb-level').value = entry.base; $('hb-upcast').checked = entry.upcast;
+      $('hb-concentration').checked = Boolean(entry.concentration);
       $('hb-damage-enabled').checked = entry.hasDamage;
       const d = entry.customDice || { count: 1, sides: 6, bonus: 0, perLevel: 0 };
       $('hb-dice-count').value = d.count; $('hb-dice-sides').value = d.sides;
