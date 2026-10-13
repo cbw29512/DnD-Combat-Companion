@@ -440,7 +440,7 @@ main{gap:5px;padding:6px 10px}
      <label>Spell level<select id="hb-level"><option value="0">Cantrip</option><option value="1" selected>1</option>
       <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
       <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></label>
-     <label class="hb-check"><input id="hb-upcast" type="checkbox">Can upcast</label>
+     <label class="hb-check"><input id="hb-upcast" type="checkbox">Can upcast</label><label class="hb-check"><input id="hb-concentration" type="checkbox">Concentration</label>
      <label class="hb-check"><input id="hb-damage-enabled" type="checkbox" checked>Rolls damage</label>
      <label class="hb-wide">Range, save and targeting<textarea id="hb-save-text" maxlength="750" placeholder="Range 60 ft.; DEX save for half damage"></textarea></label>
      <label class="hb-wide">Effects, duration and rules<textarea id="hb-effect" maxlength="2500" placeholder="Describe the spell effect, concentration and other special rules"></textarea></label>
@@ -1038,4 +1038,4 @@ $('clear').onclick=()=>output.textContent='Results cleared.';
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice','homebrew'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
 edition.onchange=()=>{selected=null;updateMonsters();updateSpells();render();refreshConcentration();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.';};
 opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();refreshConcentration();
-</script><script src="./homebrew.js?v=5"></script></body></html>
+</script><script src="./homebrew.js?v=6"></script></body></html>
