@@ -537,7 +537,7 @@ const monsters=[
 {"edition":"2014","name":"Manticore","cr":"3","hp":68,"ac":14,"traits":"Tail Spikes: 24 ammunition, restored by a long rest. Every Tail Spike attack spends 1; 3-spike volley spends 3. Tracked on individual cards.","actions":[{"name":"Bite","toHit":5,"dice":[1,8,3],"type":"piercing"},{"name":"Claw","toHit":5,"dice":[1,6,3],"type":"slashing"},{"name":"Tail Spike","toHit":5,"dice":[1,8,3],"type":"piercing","costs":[{"name":"Tail Spikes","amount":1}]}],"multiattacks":[{"name":"Multiattack · Bite + 2 Claws","sequence":[0,1,1]},{"name":"Multiattack · 3 Tail Spikes","sequence":[2,2,2]}],"resources":[{"name":"Tail Spikes","max":24}]},
 {"edition":"2014","name":"Polar Bear","cr":"2","hp":42,"ac":12,"traits":"Keen Smell: advantage on Wisdom (Perception) checks involving smell.","actions":[{"name":"Bite","toHit":7,"dice":[1,8,5],"type":"piercing"},{"name":"Claws","toHit":7,"dice":[2,6,5],"type":"slashing"}],"multiattacks":[{"name":"Multiattack · Bite + Claws","sequence":[0,1]}]},
 {"edition":"2014","name":"Ettin","cr":"4","hp":85,"ac":12,"traits":"Two Heads: advantage on Perception and on saves against Blinded, Charmed, Deafened, Frightened, Stunned and Unconscious. Wakeful.","actions":[{"name":"Battleaxe","toHit":7,"dice":[2,8,5],"type":"slashing"},{"name":"Morningstar","toHit":7,"dice":[2,8,5],"type":"piercing"}],"multiattacks":[{"name":"Multiattack · Battleaxe + Morningstar","sequence":[0,1]}]},
-{"edition":"2014","name":"Troll","cr":"5","hp":84,"ac":15,"traits":"Regeneration 10 HP at start of turn, except if damaged by acid/fire since previous turn. At 0 HP, can regenerate unless stopped. DM manages turns and regeneration manually. Keen Smell.","actions":[{"name":"Bite","toHit":7,"dice":[1,6,4],"type":"piercing"},{"name":"Claw","toHit":7,"dice":[2,6,4],"type":"slashing"}],"multiattacks":[{"name":"Multiattack · Bite + 2 Claws","sequence":[0,1,1]}]},
+{"edition":"2014","name":"Troll","cr":"5","hp":84,"ac":15,"traits":"Regeneration 10 HP at start of turn, except if damaged by acid/fire since previous turn. At 0 HP, can regenerate unless stopped. DM confirms start of turn and whether acid/fire suppressed healing. Keen Smell.","regeneration":{"amount":10,"blockedBy":["acid","fire"]},"actions":[{"name":"Bite","toHit":7,"dice":[1,6,4],"type":"piercing"},{"name":"Claw","toHit":7,"dice":[2,6,4],"type":"slashing"}],"multiattacks":[{"name":"Multiattack · Bite + 2 Claws","sequence":[0,1,1]}]},
 {"edition":"2014","name":"Giant Ape","cr":"7","hp":157,"ac":12,"actions":[{"name":"Fist","toHit":9,"dice":[3,10,6],"type":"bludgeoning"},{"name":"Rock","toHit":9,"dice":[7,6,6],"type":"bludgeoning"}],"multiattacks":[{"name":"Multiattack · 2 Fists","sequence":[0,0]}]},
 {"edition":"2024","name":"Goblin Minion","cr":"1/8","hp":7,"ac":12,"traits":"Nimble Escape (Bonus Action): Disengage or Hide. 2024 SRD 5.2.1.","actions":[{"name":"Dagger (melee or thrown)","toHit":4,"dice":[1,4,2],"type":"piercing"}]},
 {"edition":"2024","name":"Goblin Warrior","cr":"1/4","hp":10,"ac":15,"traits":"Nimble Escape (Bonus Action): Disengage or Hide. When a weapon attack roll has Advantage, its damage includes +1d4 slashing/piercing per action (automated). 2024 SRD 5.2.1.","actions":[{"name":"Scimitar","toHit":4,"dice":[1,6,2],"type":"slashing","advantageDamage":[1,4,0]},{"name":"Shortbow","toHit":4,"dice":[1,6,2],"type":"piercing","advantageDamage":[1,4,0]}]}
@@ -655,6 +655,24 @@ function adjustMonsterHp(m,delta){
  if(!Number.isInteger(delta)||Math.abs(delta)>99999)throw Error('Invalid HP change.');
  m.currentHp=Math.max(0,Math.min(m.maxHp,m.currentHp+delta));
  save();return m.currentHp;
+}
+function applyStartTurnRegeneration(m,blocked){
+ try{
+  const amount=m.regeneration?.amount;
+  if(!Number.isInteger(amount)||amount<1||amount>1000)throw Error('No supported regeneration for this monster.');
+  if(typeof blocked!=='boolean')throw Error('DM must confirm whether regeneration is suppressed.');
+  if(blocked)return 0;
+  const before=m.currentHp;
+  m.currentHp=Math.min(m.maxHp,before+amount);
+  save();return m.currentHp-before;
+ }catch(e){console.warn('Regeneration failed',e);throw e}
+}
+function restoreMonsterResources(m){
+ try{
+  if(!Array.isArray(m.resourceState))throw Error('No valid resource state.');
+  for(const item of m.resourceState)item.remaining=item.max;
+  save();return m.resourceState.length;
+ }catch(e){console.warn('Resource restoration failed',e);throw e}
 }
 function toggleMonsterCondition(m,value){
  if(!CONDITIONS.includes(value))throw Error('Select a valid condition.');
@@ -977,7 +995,18 @@ function render(){
     row.append(title,down,up);resourceList.append(row);
    }
   };
-  resourceTools.append(resourceTitle,resourceList);refreshResources();
+  const restoreAll=document.createElement('button');restoreAll.textContent='Restore all uses (DM)';
+  restoreAll.onclick=()=>{try{restoreMonsterResources(m);refreshResources()}catch(e){console.warn('Resource restore failed',e);alert(e.message)}};
+  resourceTools.append(resourceTitle,resourceList,restoreAll);refreshResources();
+  if(m.regeneration?.amount){
+   const regenerationTools=document.createElement('div');regenerationTools.className='monster-state-tools';
+   const regenerationTitle=document.createElement('strong');regenerationTitle.textContent='Start-of-turn regeneration';
+   const suppression=document.createElement('label');const prevented=document.createElement('input');prevented.type='checkbox';
+   suppression.append(prevented,document.createTextNode(' Suppressed by acid/fire since prior turn'));
+   const regenerate=document.createElement('button');regenerate.textContent='Apply regeneration +'+m.regeneration.amount;
+   regenerate.onclick=()=>{try{const gained=applyStartTurnRegeneration(m,prevented.checked);hpTitle.textContent='Current HP: '+m.currentHp+' / '+m.maxHp;refreshStats();regenerate.textContent='Apply regeneration +'+m.regeneration.amount+' (last: '+gained+')'}catch(e){console.warn('Regeneration action failed',e);alert(e.message)}};
+   regenerationTools.append(regenerationTitle,suppression,regenerate);resourceTools.after(regenerationTools);
+  }
   const ruleDetails=document.createElement('details');ruleDetails.className='monster-rules-details';
   const summary=document.createElement('summary');summary.textContent='Printed attacks and traits';
   ruleDetails.append(summary,rules);
