@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict');
+const test=require('node:test');
+const v=require('./netlify-site/validation.js');
+const e=require('./netlify-site/engine.js');
+const cat=require('./netlify-site/catalog.js');
+const clone=x=>JSON.parse(JSON.stringify(x));
+test('all bundled monster cards validate',()=>{for(const card of cat.monsters)assert.equal(v.monster(card),true)});
+test('all bundled spell cards validate',()=>{for(const card of cat.spells)assert.equal(v.spell(card),true)});
+test('critical multiplier 100000 rejected',()=>{const card=clone(cat.monsters.find(x=>x.edition==='2014'));card.attacks[0].criticalMultiplier=100000;assert.throws(()=>v.monster(card),/Invalid monster attack/)});
+test('critical multiplier <=4 accepted',()=>{const card=clone(cat.monsters.find(x=>x.edition==='2014'));card.attacks[0].criticalMultiplier=4;assert.equal(v.monster(card),true)});
+test('malicious oversized attack batch rejected',()=>{const card=clone(cat.monsters.find(x=>x.edition==='2014'));card.attackGroups[0].choices=[{id:card.attacks[0].id,count:20},{id:card.attacks[0].id,count:20},{id:card.attacks[0].id,count:20}];assert.throws(()=>v.monster(card),/Attack batch/);assert.throws(()=>e.rollAll(card,()=>0.5),/Unsafe attack batch/)});
+test('engine refuses unvalidated critical multiplier',()=>{assert.throws(()=>e.attack({name:'Unsafe',bonus:0,damage:[{n:1,s:6,b:0}],criticalMultiplier:10000},'3.5',()=>0.99),/Unsafe critical settings/)});
+test('engine rejects nonnumeric and oversized dice',()=>{assert.throws(()=>e.damage([{n:999999,s:20,b:0}],()=>0.5),/Unsafe damage dice/);assert.throws(()=>e.damage([{n:1,s:NaN,b:0}],()=>0.5),/Unsafe damage dice/)});
+test('valid attack deals damage',()=>{const a={name:'Basic',bonus:4,damage:[{n:1,s:6,b:2}]};const r=e.attack(a,'2014',()=>0);assert.equal(r.total,5);assert.equal(r.damage.total,3)});
+test('5e Fireball level 5 is 10d6',()=>{const s=cat.spells.find(x=>x.id==='fireball-14');const r=e.cast(s,5,()=>0);assert.equal(r.damage.parts[0].rolls.length,10)});
