@@ -576,7 +576,7 @@ const rules=[
 ['Thunder damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
 ['Damage types','Acid · Bludgeoning · Cold · Fire · Force · Lightning · Necrotic · Piercing · Poison · Psychic · Radiant · Slashing · Thunder. Types matter for resistance, immunity and vulnerability.']
 ];
-let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if(Array.isArray(d))roster=d.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string').slice(0,100)}catch(e){console.warn('Roster recovery failed',e)}
+let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if(Array.isArray(d))roster=d.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string'&&typeof x.edition==='string'&&Array.isArray(x.actions)).slice(0,100)}catch(e){console.warn('Roster recovery failed',e)}
 let selected=null;
 function secureDie(sides){if(!Number.isInteger(sides)||sides<2||sides>1000000)throw Error('Invalid dice sides');if(!globalThis.crypto?.getRandomValues||!isSecureContext)throw Error('Secure Web Crypto unavailable: open through HTTPS.');const bound=4294967296-Math.floor(4294967296/sides)%sides,buf=new Uint32Array(1);for(let i=0;i<100;i++){crypto.getRandomValues(buf);if(buf[0]<bound)return buf[0]%sides+1}throw Error('Secure randomness retry exhausted')}
 function roll(n,s,b=0){if(!Number.isInteger(n)||n<1||n>100||!Number.isInteger(b)||Math.abs(b)>1000)throw Error('Unsafe dice formula');const dice=Array.from({length:n},()=>secureDie(s));return{dice,total:dice.reduce((a,v)=>a+v,b),bonus:b}}
@@ -649,6 +649,7 @@ function resolveMonsterChoice(monster,value,mode){
  if(!parsed)throw Error('Select an available attack.');
  const pos=Number(parsed[2]);
  const routine=parsed[1]==='r'?(monster.multiattacks||[])[pos]:null;
+ if(parsed[1]==='r'&&!routine)throw Error('Selected multiattack is unavailable.');
  const sequence=routine?routine.sequence:[pos];
  if(!Array.isArray(sequence)||!sequence.length||sequence.length>8)throw Error('Invalid multiattack routine.');
  const strikes=sequence.map(index=>{
@@ -673,6 +674,7 @@ function describeMonsterChoice(monster,result){
 function render(){
  const root=$('roster');root.replaceChildren();
  for(const m of roster){
+  if(m.edition!==edition.value)continue; // Separate encounters by edition without erasing the others.
   const card=document.createElement('div');card.className='flip-card';
   const inner=document.createElement('div');inner.className='flip-inner';
   const front=document.createElement('article');front.className='card-face monster-front';
@@ -838,6 +840,6 @@ $('diceTray').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();
 updateDicePool();
 $('clear').onclick=()=>output.textContent='Results cleared.';
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice','homebrew'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
-edition.onchange=()=>{roster=[];selected=null;save();updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.'};
+edition.onchange=()=>{selected=null;updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.';};
 opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
 </script><script src="./homebrew.js?v=5"></script></body></html>
