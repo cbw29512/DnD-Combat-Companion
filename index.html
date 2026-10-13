@@ -70,6 +70,7 @@
 <script>
 'use strict';
 const $=id=>document.getElementById(id),edition=$('edition'),output=$('output');
+// Vetted sample cards only. Expand via edition-specific sourced datasets, not guessed stats.
 const monsters=[
 {edition:'2014',name:'Goblin',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar',toHit:4,dice:[1,6,2],type:'slashing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
 {edition:'2014',name:'Skeleton',cr:'1/4',hp:13,ac:13,actions:[{name:'Shortsword',toHit:4,dice:[1,6,2],type:'piercing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
@@ -100,6 +101,19 @@ const rules=[
 ['Restrained','Speed 0; its attacks disadvantaged; incoming attacks advantaged; disadvantage on DEX saves.'],
 ['Stunned','Incapacitated, cannot move, speaks only falteringly; fails STR/DEX saves; attacks against have advantage.'],
 ['Unconscious','Incapacitated, cannot move/speak, unaware; drops held items and falls prone; fails STR/DEX saves; attacks against advantage; within 5 feet hits critical.'],
+['Acid damage','Damage type. Check the target’s edition-specific resistance, immunity, or vulnerability before applying damage.'],
+['Bludgeoning damage','Damage type dealt by crushing impacts. Check applicable resistance, immunity, or vulnerability.'],
+['Cold damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Fire damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Force damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Lightning damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Necrotic damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Piercing damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Poison damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Psychic damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Radiant damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Slashing damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
+['Thunder damage','Damage type. Check applicable resistance, immunity, or vulnerability.'],
 ['Damage types','Acid · Bludgeoning · Cold · Fire · Force · Lightning · Necrotic · Piercing · Poison · Psychic · Radiant · Slashing · Thunder. Types matter for resistance, immunity and vulnerability.']
 ];
 let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if(Array.isArray(d))roster=d.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string').slice(0,100)}catch(e){console.warn('Roster recovery failed',e)}
