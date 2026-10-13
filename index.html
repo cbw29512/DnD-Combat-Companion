@@ -35,8 +35,7 @@
 <section id="spells" class="panel hidden"><h2>Spells</h2>
 <label for="spell">Choose spell</label><select id="spell"></select>
 <div id="upcastArea"><label for="slot">Cast at level</label><select id="slot"></select></div>
-<div id="spellInfo" class="item"></div>
-<button class="primary" id="cast">Cast spell</button>
+<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="card-actions"><button class="primary" id="cast">✦ CAST</button><button id="flipSpell">Flip / Rules</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
 <section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
 <section id="dice" class="panel hidden"><h2>Secure dice</h2><div class="row"><label>Count <input type="number" id="diceCount" min="1" max="100" value="1"></label><label>Faces <select id="diceSides"><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option><option selected>20</option><option>100</option></select></label><label>Modifier <input type="number" id="diceMod" min="-1000" max="1000" value="0"></label></div><button class="primary" id="rollDice">Roll</button></section>
