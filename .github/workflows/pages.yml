@@ -1,0 +1,38 @@
+name: Deploy Combat Companion to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify deployable website exists
+        run: |
+          test -s site/index.html || { echo "Website source not committed yet" >&2; exit 1; }
+          test -s site/app.js || exit 1
+          test -s site/sw.js || exit 1
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+      - id: deployment
+        uses: actions/deploy-pages@v4
