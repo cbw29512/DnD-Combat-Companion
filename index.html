@@ -1005,7 +1005,7 @@ function render(){
    suppression.append(prevented,document.createTextNode(' Suppressed by acid/fire since prior turn'));
    const regenerate=document.createElement('button');regenerate.textContent='Apply regeneration +'+m.regeneration.amount;
    regenerate.onclick=()=>{try{const gained=applyStartTurnRegeneration(m,prevented.checked);hpTitle.textContent='Current HP: '+m.currentHp+' / '+m.maxHp;refreshStats();regenerate.textContent='Apply regeneration +'+m.regeneration.amount+' (last: '+gained+')'}catch(e){console.warn('Regeneration action failed',e);alert(e.message)}};
-   regenerationTools.append(regenerationTitle,suppression,regenerate);resourceTools.after(regenerationTools);
+   regenerationTools.append(regenerationTitle,suppression,regenerate);resourceTools.append(regenerationTools);
   }
   const ruleDetails=document.createElement('details');ruleDetails.className='monster-rules-details';
   const summary=document.createElement('summary');summary.textContent='Printed attacks and traits';
