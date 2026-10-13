@@ -167,6 +167,17 @@ gap:4px;align-content:stretch;overflow:hidden}
 .spell-total strong{grid-column:2;grid-row:1 / span 2;color:white;font-size:clamp(2rem,5vh,2.8rem);line-height:1;font-variant-numeric:tabular-nums}
 .spell-total small{grid-column:1;font-size:.75rem}
 @media(max-height:600px){.spell-total{min-height:50px;padding:3px 8px}.spell-total strong{font-size:1.8rem}}
+
+/* Card hierarchy: name is always visible, action buttons use one row. */
+.monster-front{grid-template-rows:42px minmax(0,1fr) auto 36px auto 48px;gap:5px}
+.monster-front .card-top-tools{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:5px}
+.monster-front .card-top-tools .card-name{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:clamp(.95rem,2.4vh,1.2rem);color:#ffe0a2}
+.monster-front .card-top-tools button{height:36px;min-height:36px;width:36px}
+.monster-front .card-meta{text-align:center;font-weight:700}
+.monster-front .card-actions{display:grid;grid-template-columns:55px minmax(0,1fr) 55px;gap:5px;align-items:stretch}
+.monster-front .card-actions button{min-height:46px;padding:4px 2px;font-size:.85rem;font-weight:800}
+.monster-front .card-actions button.primary{height:48px;min-height:46px;font-size:1rem}
+@media(max-height:650px){.monster-front{grid-template-rows:36px minmax(0,1fr) auto 32px auto 44px;gap:3px}.monster-front .card-top-tools button{height:32px;min-height:32px}.monster-front .card-actions button.primary{height:44px;min-height:44px}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -293,7 +304,7 @@ function render(){
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
   opt(select,(m.actions||[]).map((a,i)=>[String(i),a.name]));
-  const mode=document.createElement('select');mode.setAttribute('aria-label','Attack roll mode for '+m.name);opt(mode,[['normal','Normal'],['advantage','Advantage'],['disadvantage','Disadvantage']]);
+  let attackMode='normal';
   const result=document.createElement('div');result.className='result-grid';
   const hit=document.createElement('div');hit.className='result-num';hit.innerHTML='<small>TO HIT</small><strong>—</strong>';
   const damage=document.createElement('div');damage.className='result-num';damage.innerHTML='<small>DAMAGE</small><strong>—</strong>';
@@ -302,8 +313,8 @@ function render(){
   attack.onclick=()=>safe(()=>{
    const a=m.actions[Number(select.value)];if(!a)throw Error('Choose an attack first');
    // Attack roll mode changes only the d20 selection; damage remains a separate roll.
-   const first=secureDie(20),second=mode.value==='normal'?null:secureDie(20);
-   const natural=second===null?first:(mode.value==='advantage'?Math.max(first,second):Math.min(first,second));
+   const first=secureDie(20),second=attackMode==='normal'?null:secureDie(20);
+   const natural=second===null?first:(attackMode==='advantage'?Math.max(first,second):Math.min(first,second));
    const total=natural+a.toHit;
    const critical=natural===20, fumble=natural===1;
    flashAttackResult(critical,fumble);
@@ -320,7 +331,7 @@ function render(){
    damage.querySelector('small').textContent='DAMAGE · '+a.type;
    const diceText=second===null?String(first):first+' / '+second+' → '+natural;
    const damageText=extra?' ['+d.dice.join(',')+'] + crit ['+extra.dice.join(',')+'] + '+d.bonus:' ['+d.dice.join(',')+'] + '+d.bonus;
-   display(m.name+' — '+a.name+'\n'+mode.value.toUpperCase()+' d20: '+diceText+' + '+a.toHit+' = '+total+
+   display(m.name+' — '+a.name+'\n'+attackMode.toUpperCase()+' d20: '+diceText+' + '+a.toHit+' = '+total+
      (critical?'  ★ NAT 20 CRITICAL':fumble?'  ✕ NAT 1 MISS':'')+'\nDamage: '+dmg+' '+a.type+damageText);
   });
   const duplicate=document.createElement('button');duplicate.textContent='+';duplicate.title='Duplicate';duplicate.setAttribute('aria-label','Duplicate '+m.name);duplicate.onclick=()=>safe(()=>{
@@ -333,8 +344,14 @@ function render(){
    roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render();
   };
   const tools=document.createElement('div');tools.className='card-top-tools';tools.append(duplicate,remove);
-  const controls=document.createElement('div');controls.className='card-actions';controls.append(attack);
-  front.append(tools,art,name,stats,select,mode,result,controls);
+  const dis=document.createElement('button');dis.textContent='DIS';dis.setAttribute('aria-label','Attack with disadvantage');dis.title='Roll one attack with disadvantage';
+  const adv=document.createElement('button');adv.textContent='ADV';adv.setAttribute('aria-label','Attack with advantage');adv.title='Roll one attack with advantage';
+  // One-tap special modes apply only to that attack, then normal resumes.
+  dis.onclick=()=>{attackMode='disadvantage';attack.click();attackMode='normal'};
+  adv.onclick=()=>{attackMode='advantage';attack.click();attackMode='normal'};
+  const controls=document.createElement('div');controls.className='card-actions';controls.append(dis,attack,adv);
+  tools.insertBefore(name,remove);
+  front.append(tools,art,stats,select,result,controls);
   const heading=document.createElement('h3');heading.className='card-name';heading.textContent=m.name+' — Rules';
   const rules=document.createElement('div');rules.className='card-meta';
   rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+'+'+a.dice[2]+' '+a.type).join('\\n');
