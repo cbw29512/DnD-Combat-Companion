@@ -373,9 +373,21 @@ const monsters=[
 {edition:'2014',name:'Goblin',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar',toHit:4,dice:[1,6,2],type:'slashing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
 {edition:'2014',name:'Skeleton',cr:'1/4',hp:13,ac:13,actions:[{name:'Shortsword',toHit:4,dice:[1,6,2],type:'piercing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
 {edition:'2014',name:'Zombie',cr:'1/4',hp:22,ac:8,actions:[{name:'Slam',toHit:3,dice:[1,6,1],type:'bludgeoning'}]},
-{edition:'2014',name:'Wolf',cr:'1/4',hp:11,ac:13,actions:[{name:'Bite',toHit:4,dice:[2,4,2],type:'piercing; prone save DC 11 Strength'}]},
+{edition:'2014',name:'Wolf',cr:'1/4',hp:11,ac:13,traits:'Pack Tactics and Keen Hearing and Smell; DM applies conditional advantage.',actions:[{name:'Bite',toHit:4,dice:[2,4,2],type:'piercing',onHit:'Creature target: DC 11 Strength save or prone.'}]},
 {edition:'2014',name:'Orc',cr:'1/2',hp:15,ac:13,actions:[{name:'Greataxe',toHit:5,dice:[1,12,3],type:'slashing'},{name:'Javelin',toHit:5,dice:[1,6,3],type:'piercing'}]},
 {edition:'2014',name:'Ogre',cr:'2',hp:59,ac:11,actions:[{name:'Greatclub',toHit:6,dice:[2,8,4],type:'bludgeoning'},{name:'Javelin',toHit:6,dice:[2,6,4],type:'piercing'}]},
+{"edition":"2014","name":"Giant Fire Beetle","cr":"0","hp":4,"ac":13,"traits":"Illumination: bright light 10 ft., dim light an additional 10 ft.","actions":[{"name":"Bite","toHit":1,"dice":[1,6,-1],"type":"slashing"}]},
+{"edition":"2014","name":"Bandit","cr":"1/8","hp":11,"ac":12,"actions":[{"name":"Scimitar","toHit":3,"dice":[1,6,1],"type":"slashing"},{"name":"Light Crossbow","toHit":3,"dice":[1,8,1],"type":"piercing"}]},
+{"edition":"2014","name":"Giant Rat","cr":"1/8","hp":7,"ac":12,"traits":"Pack Tactics: advantage when a non-incapacitated ally is within 5 ft. of the target. Keen Smell.","actions":[{"name":"Bite","toHit":4,"dice":[1,4,2],"type":"piercing"}]},
+{"edition":"2014","name":"Kobold","cr":"1/8","hp":5,"ac":12,"traits":"Pack Tactics: conditional advantage with an adjacent ally. Sunlight Sensitivity: attack disadvantage in sunlight.","actions":[{"name":"Dagger","toHit":4,"dice":[1,4,2],"type":"piercing"},{"name":"Sling","toHit":4,"dice":[1,4,2],"type":"bludgeoning"}]},
+{"edition":"2014","name":"Mastiff","cr":"1/8","hp":5,"ac":12,"traits":"Keen Hearing and Smell.","actions":[{"name":"Bite","toHit":3,"dice":[1,6,1],"type":"piercing","onHit":"Creature target: DC 11 Strength save or prone."}]},
+{"edition":"2014","name":"Axe Beak","cr":"1/4","hp":19,"ac":11,"actions":[{"name":"Beak","toHit":4,"dice":[1,8,2],"type":"slashing"}]},
+{"edition":"2014","name":"Giant Bat","cr":"1/4","hp":22,"ac":13,"traits":"Echolocation: blindsight 60 ft. while not deafened. Keen Hearing.","actions":[{"name":"Bite","toHit":4,"dice":[1,6,2],"type":"piercing"}]},
+{"edition":"2014","name":"Giant Lizard","cr":"1/4","hp":19,"ac":12,"actions":[{"name":"Bite","toHit":4,"dice":[1,8,2],"type":"piercing"}]},
+{"edition":"2014","name":"Gnoll","cr":"1/2","hp":22,"ac":15,"traits":"Rampage: if it drops a creature to 0 HP with a melee attack on its turn, may use a bonus action to move up to half speed and make a bite attack. DM resolves trigger.","actions":[{"name":"Bite","toHit":4,"dice":[1,4,2],"type":"piercing"},{"name":"Spear (one hand)","toHit":4,"dice":[1,6,2],"type":"piercing"},{"name":"Spear (two hands)","toHit":4,"dice":[1,8,2],"type":"piercing"},{"name":"Longbow","toHit":3,"dice":[1,8,1],"type":"piercing"}]},
+{"edition":"2014","name":"Hobgoblin","cr":"1/2","hp":11,"ac":18,"traits":"Martial Advantage: once per turn +2d6 weapon damage when target is within 5 ft. of a non-incapacitated hobgoblin ally. Not auto-added.","actions":[{"name":"Longsword","toHit":3,"dice":[1,8,1],"type":"slashing"},{"name":"Longsword (two hands)","toHit":3,"dice":[1,10,1],"type":"slashing"},{"name":"Longbow","toHit":3,"dice":[1,8,1],"type":"piercing"}]},
+{"edition":"2014","name":"Bugbear","cr":"1","hp":27,"ac":16,"traits":"Brute damage already included in Morningstar and melee Javelin dice. Surprise Attack: if a creature is surprised and hit in round one, add 2d6 damage; DM resolves eligibility.","actions":[{"name":"Morningstar","toHit":4,"dice":[2,8,2],"type":"piercing"},{"name":"Javelin (melee)","toHit":4,"dice":[2,6,2],"type":"piercing"},{"name":"Javelin (ranged)","toHit":4,"dice":[1,6,2],"type":"piercing"}]},
+{"edition":"2014","name":"Dire Wolf","cr":"1","hp":37,"ac":14,"traits":"Pack Tactics: advantage with an ally adjacent to the target. Keen Hearing and Smell.","actions":[{"name":"Bite","toHit":5,"dice":[2,6,3],"type":"piercing","onHit":"Creature target: DC 13 Strength save or prone."}]},
 {edition:'2024',name:'Goblin (sample)',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar (sample)',toHit:4,dice:[1,6,2],type:'slashing'}]}
 ];
 const spells=[
@@ -432,8 +444,9 @@ function display(s){const message=String(s);output.textContent=message+'\n\n'+ou
 function safe(fn){try{fn()}catch(e){console.error('Combat Companion error',e);display('ERROR: '+e.message)}}
 function save(){try{localStorage.setItem('cc-roster',JSON.stringify(roster))}catch(e){console.warn('Could not persist roster',e)}}
 function opt(sel,values){sel.replaceChildren();for(const [value,label] of values){const o=document.createElement('option');o.value=value;o.textContent=label;sel.append(o)}}
-function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.value),crs=[...new Set(list.map(m=>m.cr))];opt($('cr'),crs.length?crs.map(x=>[x,x]):[['','No verified cards for this edition']]);updateMonsterList()}
-function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value);opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
+function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.value),crs=[...new Set(list.map(m=>m.cr))].sort((a,b)=>crNumber(a)-crNumber(b));opt($('cr'),crs.length?crs.map(x=>[x,x]):[['','No verified cards for this edition']]);updateMonsterList()}
+function crNumber(cr){const [num,den]=String(cr).split('/').map(Number);return den?num/den:num}
+function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value).sort((a,b)=>a.name.localeCompare(b.name));opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
 function updateSpells(){const list=spells.filter(s=>s.edition===edition.value);opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
 function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';$('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
 
@@ -499,7 +512,7 @@ function render(){
    const diceText=second===null?String(first):first+' / '+second+' → '+natural;
    const damageText=extra?' ['+d.dice.join(',')+'] + crit ['+extra.dice.join(',')+'] + '+d.bonus:' ['+d.dice.join(',')+'] + '+d.bonus;
    display(m.name+' — '+a.name+'\n'+attackMode.toUpperCase()+' d20: '+diceText+' + '+a.toHit+' = '+total+
-     (critical?'  ★ NAT 20 CRITICAL':fumble?'  ✕ NAT 1 MISS':'')+'\nDamage: '+dmg+' '+a.type+damageText);
+     (critical?'  ★ NAT 20 CRITICAL':fumble?'  ✕ NAT 1 MISS':'')+'\nDamage: '+dmg+' '+a.type+damageText+(a.onHit?'\nOn-hit rider (DM resolves): '+a.onHit:'')+(m.traits?'\nTraits reminder (DM resolves): '+m.traits:''));
   });
   const duplicate=document.createElement('button');duplicate.textContent='+';duplicate.title='Duplicate';duplicate.setAttribute('aria-label','Duplicate '+m.name);duplicate.onclick=()=>safe(()=>{
    if(roster.length>=100)throw Error('Encounter limited to 100 monsters');
@@ -521,7 +534,7 @@ function render(){
   front.append(tools,art,stats,select,result,controls);
   const heading=document.createElement('h3');heading.className='card-name';heading.textContent=m.name+' — Rules';
   const rules=document.createElement('div');rules.className='card-meta';
-  rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+'+'+a.dice[2]+' '+a.type).join('\\n');
+  rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+(a.dice[2]>=0?'+':'')+a.dice[2]+' '+a.type+(a.onHit?'\n  On hit: '+a.onHit:'')).join('\n')+(m.traits?'\n\nTRAITS (DM resolves):\n'+m.traits:'');
   rules.style.whiteSpace='pre-line';
   const flipBack=document.createElement('button');flipBack.textContent='Back to card';flipBack.onclick=()=>card.classList.remove('flipped');
   back.append(heading,rules,flipBack);
