@@ -426,7 +426,7 @@ const spells=[
 {edition:'2014',name:"Shield of Faith",base:1,upcast:false,special:"Bonus action; +2 AC to one creature within 60 ft.; concentration up to 10 minutes."},
 {edition:'2014',name:"Web",base:2,upcast:false,special:"20-ft cube. Difficult terrain and lightly obscured; Dexterity save or restrained upon entry/turn start. Concentration 1 hour; fire ignites webs."},
 {edition:'2014',name:"Protection from Evil and Good",base:1,upcast:false,special:"Touch, concentration 10 minutes. Aberrations, celestials, elementals, fey, fiends, and undead have disadvantage attacking target; charm/frighten/possess protections."},
-{"edition":"2014","name":"Blindness/Deafness","base":2,"upcast":true,"special":"30 ft.; Constitution save or blinded or deafened for 1 minute. End-of-turn Constitution save ends. No concentration."},
+{edition:'2014',name:'Blindness/Deafness',base:2,upcast:true,special:'30 ft.; Constitution save or blinded/deafened, repeats at end of turns. No concentration.',specialAtLevel:l=>'30 ft.; '+(l-1)+' target(s); Constitution save or blinded/deafened for 1 minute; end-turn saves. No concentration.'},
 {"edition":"2014","name":"Lesser Restoration","base":2,"upcast":false,"special":"Touch: end one disease or one of blinded, deafened, paralyzed, poisoned."},
 {"edition":"2014","name":"See Invisibility","base":2,"upcast":false,"special":"Self, 1 hour: see invisible creatures and objects as though visible, and into the Ethereal Plane (ethereal creatures appear ghostly)."},
 {"edition":"2014","name":"Blur","base":2,"upcast":false,"special":"Self, concentration up to 1 minute: sight-dependent attacks against you have disadvantage. No effect on attackers with blindsight or truesight."},
