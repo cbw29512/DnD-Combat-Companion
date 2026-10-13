@@ -368,6 +368,10 @@ main{gap:5px;padding:6px 10px}
 .monster-rules-details .card-meta{font-size:.85rem;line-height:1.4;white-space:pre-line;overflow-wrap:anywhere}
 #monsters .card-back>button{margin-top:0;flex:none;font-size:.95rem}
 
+/* Duration controls stay on the card back and remain readable on tablets. */
+.condition-counter{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap;padding:3px;border:1px solid #566179;border-radius:7px}
+.condition-counter input{width:58px;min-height:40px;font-size:1rem;text-align:center;background:#122035;color:#fff;border:1px solid #8294aa;border-radius:5px}
+.condition-counter button{min-height:40px;font-size:.94rem}
 /* Compact caster-scoped concentration: one row, deliberately manual for saves/duration. */
 .concentration-bar{display:flex;align-items:center;gap:7px;min-height:43px;padding:5px 9px;background:#18263a;border:1px solid #506a82;border-radius:9px;margin:4px 0}
 .concentration-bar label{display:flex;align-items:center;gap:5px;white-space:nowrap;margin:0;font-size:.9rem}
@@ -639,6 +643,9 @@ function normalizeMonsterInstance(m){
  m.maxHp=Math.min(99999,Math.max(1,maxHp));
  m.currentHp=Number.isInteger(m.currentHp)?Math.min(m.maxHp,Math.max(0,m.currentHp)):m.maxHp;
  m.conditions=Array.isArray(m.conditions)?[...new Set(m.conditions.filter(x=>CONDITIONS.includes(x)))]:[];
+ // Durations are DM-controlled countdowns, not assumed automatic turn-end rules.
+ const previousDurations=m.conditionRounds&&typeof m.conditionRounds==='object'?m.conditionRounds:{};
+ m.conditionRounds=Object.fromEntries(m.conditions.filter(x=>Number.isInteger(previousDurations[x])&&previousDurations[x]>0&&previousDurations[x]<=999).map(x=>[x,previousDurations[x]]));
  const stored=Array.isArray(m.resourceState)?m.resourceState:[];
  m.resourceState=(m.resources||[]).filter(r=>r&&typeof r.name==='string'&&Number.isInteger(r.max)&&r.max>0&&r.max<=1000)
   .map(r=>{const old=stored.find(x=>x.name===r.name);return {name:r.name,max:r.max,remaining:Number.isInteger(old?.remaining)?Math.max(0,Math.min(r.max,old.remaining)):r.max}});
@@ -651,8 +658,25 @@ function adjustMonsterHp(m,delta){
 }
 function toggleMonsterCondition(m,value){
  if(!CONDITIONS.includes(value))throw Error('Select a valid condition.');
- if(m.conditions.includes(value))m.conditions=m.conditions.filter(x=>x!==value);else m.conditions.push(value);
+ if(m.conditions.includes(value)){
+  m.conditions=m.conditions.filter(x=>x!==value);
+  if(m.conditionRounds)delete m.conditionRounds[value];
+ }else m.conditions.push(value);
  save();return m.conditions;
+}
+function setConditionRounds(m,condition,rounds){
+ if(!m.conditions.includes(condition))throw Error('Condition is not active.');
+ if(!Number.isInteger(rounds)||rounds<0||rounds>999)throw Error('Enter 0 (manual) or 1–999 rounds.');
+ m.conditionRounds=m.conditionRounds||{};
+ if(rounds===0)delete m.conditionRounds[condition];else m.conditionRounds[condition]=rounds;
+ save();return m.conditionRounds[condition]||0;
+}
+function advanceConditionRounds(m,condition){
+ const old=m.conditionRounds?.[condition];
+ if(!Number.isInteger(old)||old<1)throw Error('Set a duration before advancing.');
+ if(old===1){m.conditions=m.conditions.filter(x=>x!==condition);delete m.conditionRounds[condition]}
+ else m.conditionRounds[condition]=old-1;
+ save();return old-1;
 }
 function monsterAttackCosts(m,choice){
  const match=/^([ar]):(\d+)$/.exec(String(choice));
@@ -922,8 +946,15 @@ function render(){
    conditionList.replaceChildren();
    if(!m.conditions.length){conditionList.textContent='None';return}
    for(const value of m.conditions){
+    const wrap=document.createElement('span');wrap.className='condition-counter';
     const b=document.createElement('button');b.textContent=value+' ×';b.title='Remove '+value;
-    b.onclick=()=>{toggleMonsterCondition(m,value);refreshStats();refreshConditions()};conditionList.append(b);
+    b.onclick=()=>{toggleMonsterCondition(m,value);refreshStats();refreshConditions()};
+    const rounds=document.createElement('input');rounds.type='number';rounds.min='0';rounds.max='999';rounds.inputMode='numeric';rounds.value=String(m.conditionRounds?.[value]||0);
+    rounds.setAttribute('aria-label',value+' remaining rounds; 0 means manual');rounds.title='Remaining rounds (0 = no countdown)';
+    rounds.onchange=()=>{try{setConditionRounds(m,value,Number(rounds.value));refreshConditions()}catch(e){console.warn('Condition duration rejected',e);alert(e.message);refreshConditions()}};
+    const tick=document.createElement('button');tick.textContent='−1 round';tick.title='DM: advance this condition by one round';tick.disabled=!m.conditionRounds?.[value];
+    tick.onclick=()=>{try{advanceConditionRounds(m,value);refreshConditions();refreshStats()}catch(e){console.warn('Condition turn rejected',e);alert(e.message)}};
+    wrap.append(b,rounds,tick);conditionList.append(wrap);
    }
   };
   addCondition.onclick=()=>{toggleMonsterCondition(m,conditionChooser.value);refreshConditions();refreshStats()};
