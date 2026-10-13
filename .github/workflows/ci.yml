@@ -2,6 +2,7 @@ name: Combat Companion checks
 on:
   push:
   pull_request:
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -10,18 +11,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run safety tests
+      - name: Verify published site files
         run: |
-          if [ ! -f test-safety.js ]; then
-            echo "Missing test-safety.js: source not yet imported" >&2
-            exit 1
-          fi
-          node --test test-safety.js
-      - name: Validate deployable app files
+          test -s index.html
+          test -s homebrew.js
+          test -s homebrew.css
+          test -s test-current.cjs
+      - name: Check JavaScript syntax
         run: |
-          for f in index.html app.js catalog.js engine.js validation.js styles.css sw.js manifest.webmanifest; do
-            test -s "netlify-site/$f" || { echo "Missing $f" >&2; exit 1; }
-          done
-          node --check netlify-site/app.js
-          node --check netlify-site/engine.js
-          node --check netlify-site/validation.js
+          node --check homebrew.js
+          node --check test-current.cjs
+      - name: Test current GitHub Pages app
+        run: node --test test-current.cjs
