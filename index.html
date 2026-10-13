@@ -158,6 +158,15 @@ gap:4px;align-content:stretch;overflow:hidden}
 #spells #spellCard .spell-front .card-actions #flipSpell{min-height:48px;padding:6px 10px;font-size:.85rem}
 @media(max-height:650px){#spells #spellCard .spell-front{gap:4px}#spells #spellCard .spell-front .card-actions #cast,#spells #spellCard .spell-front .card-actions #flipSpell{min-height:42px}}
 @media(max-width:410px){#spells .spell-picker #spell{width:min(52vw,250px)}#spells .spell-picker #slot{width:104px}}
+
+/* Spell damage total is visible on the front without flipping or page scrolling. */
+#spells #spellCard .spell-front{grid-template-rows:minmax(28px,1fr) auto minmax(0,auto) auto auto}
+.spell-total{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;
+ background:#111d2b;border:2px solid #c6a15f;border-radius:10px;padding:5px 12px;min-height:64px}
+.spell-total span{color:#f5d696;font-size:.82rem;font-weight:800}
+.spell-total strong{grid-column:2;grid-row:1 / span 2;color:white;font-size:clamp(2rem,5vh,2.8rem);line-height:1;font-variant-numeric:tabular-nums}
+.spell-total small{grid-column:1;font-size:.75rem}
+@media(max-height:600px){.spell-total{min-height:50px;padding:3px 8px}.spell-total strong{font-size:1.8rem}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -170,7 +179,7 @@ gap:4px;align-content:stretch;overflow:hidden}
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
 <div class="spell-picker"><label class="sr-only" for="spell">Choose spell</label><select id="spell" aria-label="Choose spell"></select><div id="upcastArea"><label class="sr-only" for="slot">Spell slot level</label><select id="slot" aria-label="Cast at level"></select></div></div>
-<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
+<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="spell-total" id="spellTotal" role="status" aria-live="polite"><span>TOTAL DAMAGE</span><strong id="spellTotalValue">—</strong><small id="spellTotalType">Cast a spell to roll</small></div><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
 <section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><p class="muted">These are 2014 5e reference examples. Other editions require their own rules and are not yet available.</p><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
 <section id="dice" class="panel hidden"><h2>Secure dice</h2><div class="row"><label>Count <input type="number" id="diceCount" min="1" max="100" value="1"></label><label>Faces <select id="diceSides"><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option><option selected>20</option><option>100</option></select></label><label>Modifier <input type="number" id="diceMod" min="-1000" max="1000" value="0"></label></div><button class="primary" id="rollDice">Roll</button></section>
@@ -248,7 +257,7 @@ function opt(sel,values){sel.replaceChildren();for(const [value,label] of values
 function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.value),crs=[...new Set(list.map(m=>m.cr))];opt($('cr'),crs.length?crs.map(x=>[x,x]):[['','No verified cards for this edition']]);updateMonsterList()}
 function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value);opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
 function updateSpells(){const list=spells.filter(s=>s.edition===edition.value);opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
-function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellCard').classList.remove('flipped');$('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
+function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';$('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
 
 // Original inline SVG silhouettes: fast, offline-safe, and decorative.
 function makeMonsterSilhouette(name){
@@ -337,7 +346,31 @@ function render(){
 }
 function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
 $('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);
-$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{const v=$('spell').value;const s=v===''?null:spells[Number(v)];if(!s||s.edition!==edition.value){display('No verified spell selected');return}const level=s.upcast?Number($('slot').value):s.base;if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');if(!s.formula){display(s.name+': '+s.special+'\nDM adjudicates effect.');return}if(s.name==='Magic Missile'){const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));display('Magic Missile level '+level+': '+results.map((r,i)=>'Dart '+(i+1)+': '+r.total).join(' | ')+'\nDM assigns darts to targets.');return}const damage=roll(...s.formula(level));display(s.name+' level '+level+'\nDice: ['+damage.dice.join(', ')+']\nDamage: '+damage.total+' '+s.type+'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.')});
+$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{
+ const v=$('spell').value,s=v===''?null:spells[Number(v)];
+ if(!s||s.edition!==edition.value){display('No verified spell selected');return}
+ const level=s.upcast?Number($('slot').value):s.base;
+ if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');
+ let message,total='—',type='No damage roll';
+ if(!s.formula){
+  message=s.name+': '+s.special+'\nDM adjudicates effect.';
+  type='Non-damaging spell';
+ }else if(s.name==='Magic Missile'){
+  const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));
+  total=String(results.reduce((sum,r)=>sum+r.total,0));type='force · sum of all darts';
+  message='Magic Missile level '+level+'\nTOTAL: '+total+' force (all '+darts+' darts)\n'
+   +results.map((r,i)=>'Dart '+(i+1)+': '+r.dice[0]+' + 1 = '+r.total).join(' | ')
+   +'\nDM assigns darts to targets; do not apply the sum to one target unless all darts hit it.';
+ }else{
+  const damage=roll(...s.formula(level));total=String(damage.total);type=s.type+' damage';
+  message=s.name+' level '+level+'\nTOTAL DAMAGE: '+total+' '+s.type
+   +'\nDice: ['+damage.dice.join(', ')+']'
+   +'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.';
+ }
+ $('spellTotalValue').textContent=total;
+ $('spellTotalType').textContent=type;
+ display(message);
+});
 $('rule').onchange=()=>{$('ruleText').textContent=rules[Number($('rule').value)]?.[1]||''};
 $('rollDice').onclick=()=>safe(()=>{const n=Number($('diceCount').value),s=Number($('diceSides').value),b=Number($('diceMod').value),r=roll(n,s,b);display(n+'d'+s+(b>=0?'+':'')+b+' → ['+r.dice.join(', ')+'] = '+r.total)});
 $('clear').onclick=()=>output.textContent='Results cleared.';
