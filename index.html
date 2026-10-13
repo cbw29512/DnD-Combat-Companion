@@ -982,7 +982,7 @@ function render(){
   const resourceList=document.createElement('div');resourceList.className='monster-resource-list';
   const refreshResources=()=>{
    resourceList.replaceChildren();
-   if(!m.resourceState.length){resourceTools.hidden=true;return}
+   if(!m.resourceState.length){resourceTools.hidden=!m.regeneration?.amount;return}
    resourceTools.hidden=false;
    for(const item of m.resourceState){
     const row=document.createElement('div');row.className='monster-resource-row';
