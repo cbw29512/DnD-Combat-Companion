@@ -63,3 +63,12 @@
 #homebrew .hb-saved-item>div{grid-column:1/-1}
 }
 @media(max-width:470px){#homebrew .hb-saved-item button{padding:6px 8px;font-size:.85rem}}
+
+/* Homebrew multiattack sequence builder */
+#homebrew .hb-routine{background:#1b2d42;border:1px solid #60768b;border-radius:10px;padding:9px;margin:8px 0}
+#homebrew .hb-routine-picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0}
+#homebrew .hb-routine-picks label{min-width:0;font-size:.88rem}
+#homebrew .hb-routine-picks select{min-width:0;max-width:none;width:100%;min-height:43px}
+#homebrew .hb-remove-routine{min-height:42px;font-size:.91rem}
+#homebrew #hb-add-routine{min-height:44px;font-size:.98rem;font-weight:700}
+@media(min-width:1050px){#homebrew .hb-routine-picks{grid-template-columns:repeat(4,minmax(0,1fr))}}
