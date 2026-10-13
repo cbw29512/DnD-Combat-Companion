@@ -99,7 +99,10 @@ test('advantage selects higher d20 and disadvantage selects lower', () => {
 });
 
 test('switching D&D editions must not delete the encounter', () => {
-  const handler = capture(inline, /edition\.onchange=([^;]*);/, 'edition change handler');
+  const start = inline.indexOf('edition.onchange=');
+  const end = inline.indexOf("opt($('rule')", start);
+  assert.ok(start >= 0 && end > start, 'Missing edition change handler');
+  const handler = inline.slice(start, end);
   assert.doesNotMatch(handler,/roster\s*=\s*\[\]|save\(\)/);
   assert.match(inline,/if\(m\.edition!==edition\.value\)continue/);
 });
