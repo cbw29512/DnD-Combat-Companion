@@ -146,6 +146,7 @@
     attackRow();
     toggleKind();
     $('hb-save').textContent = 'Save homebrew';
+    refreshTemplates();
     note('New homebrew entry. It will appear under its selected edition.');
   }
   function toggleKind() {
@@ -237,6 +238,75 @@
     try { persist(); if (editing?.id === id) resetEditor(); note('Deleted ' + entry.name + ' from your homebrew library.'); }
     catch (error) { note('Delete could not be saved: ' + error.message, true); }
   }
+  function refreshTemplates() {
+    const target = $('hb-template');
+    if (!target) return;
+    const choices = monsters.map((monster, index) => ({ monster, index }))
+      .filter(row => !row.monster.homebrewId && row.monster.edition === $('hb-edition').value)
+      .sort((a, b) => a.monster.name.localeCompare(b.monster.name));
+    target.replaceChildren();
+    for (const { monster, index } of choices) {
+      const option = document.createElement('option');
+      option.value = String(index);
+      option.textContent = monster.name + ' · CR ' + monster.cr;
+      target.append(option);
+    }
+    $('hb-use-template').disabled = !choices.length;
+  }
+  function useTemplate() {
+    const index = Number($('hb-template').value);
+    const source = monsters[index];
+    if (!source || source.homebrewId || source.edition !== $('hb-edition').value)
+      return note('Select an existing monster in this edition first.', true);
+    resetEditor();
+    $('hb-name').value = (source.name + ' (Homebrew)').slice(0, 80);
+    $('hb-edition').value = source.edition;
+    $('hb-cr').value = source.cr;
+    $('hb-ac').value = source.ac;
+    $('hb-hp').value = source.hp;
+    $('hb-traits').value = source.traits || '';
+    $('hb-attacks').replaceChildren();
+    source.actions.forEach(a => attackRow(a));
+    refreshTemplates();
+    note('Loaded a working copy of ' + source.name + '. The original stat block is unchanged. Edit and save your version.');
+  }
+  function duplicateEntry(kind, id) {
+    const key = kind === 'monster' ? 'monsters' : 'spells';
+    const original = library[key].find(x => x.homebrewId === id);
+    if (!original) return note('The saved entry could not be found.', true);
+    if (library[key].length >= MAX_ENTRIES) return note('100 saved entries maximum for this category.', true);
+    const clone = JSON.parse(JSON.stringify(original));
+    clone.homebrewId = crypto.randomUUID();
+    clone.name = (original.name.replace(/ \(Copy\)$/, '') + ' (Copy)').slice(0, 80);
+    library[key].push(clone);
+    try { persist(); note('Duplicated ' + original.name + '. Select Edit to customize the copy.'); }
+    catch (error) { library[key].pop(); note('Could not save duplicate: ' + error.message, true); }
+  }
+  function useInCombat(kind, id) {
+    const key = kind === 'monster' ? 'monsters' : 'spells';
+    const item = library[key].find(x => x.homebrewId === id);
+    if (!item) return note('The saved entry could not be found.', true);
+    if (edition.value !== item.edition)
+      return note('Change the main edition to ' + item.edition + ', then select Use again. Existing encounter monsters will not be cleared.', true);
+    if (kind === 'monster') {
+      if (roster.length >= 100) return note('The current encounter already has 100 monsters.', true);
+      $('cr').value = item.cr;
+      updateMonsterList();
+      const index = monsters.findIndex(m => m.homebrewId === id);
+      if (index < 0) return note('Monster is not available in the catalog.', true);
+      $('monster').value = String(index);
+      document.querySelector('[data-tab="monsters"]').click();
+      $('add').click();
+      note('Added ' + item.name + ' to the encounter.');
+    } else {
+      const index = spells.findIndex(s => s.homebrewId === id);
+      if (index < 0) return note('Spell is not available in the catalog.', true);
+      document.querySelector('[data-tab="spells"]').click();
+      $('spell').value = String(index);
+      updateSpellDetails();
+      note('Selected ' + item.name + ' in Spells. Choose a slot and cast it.');
+    }
+  }
   function drawList() {
     const root = $('hb-list');
     root.replaceChildren();
@@ -254,9 +324,11 @@
       const title = document.createElement('strong'); title.textContent = item.name;
       const meta = document.createElement('small'); meta.textContent = item.edition + ' · ' + (kind === 'monster' ? 'Monster · CR ' + item.cr : 'Spell · Level ' + item.base);
       desc.append(title, meta);
+      const use = document.createElement('button'); use.textContent = 'Use'; use.title = 'Use in combat'; use.onclick = () => useInCombat(kind, item.homebrewId);
       const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.onclick = () => editEntry(kind, item.homebrewId);
+      const duplicate = document.createElement('button'); duplicate.textContent = 'Copy'; duplicate.onclick = () => duplicateEntry(kind, item.homebrewId);
       const del = document.createElement('button'); del.textContent = 'Delete'; del.onclick = () => deleteEntry(kind, item.homebrewId);
-      row.append(desc, edit, del); root.append(row);
+      row.append(desc, use, edit, duplicate, del); root.append(row);
     }
   }
   function exportBackup() {
@@ -291,6 +363,8 @@
   };
   $('hb-new').onclick = resetEditor;
   $('hb-search').addEventListener('input', drawList);
+  $('hb-edition').addEventListener('change', refreshTemplates);
+  $('hb-use-template').onclick = useTemplate;
   $('hb-export').onclick = exportBackup;
   $('hb-import').addEventListener('change', event => importBackup(event.target.files[0]));
   resetEditor();
