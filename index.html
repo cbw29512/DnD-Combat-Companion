@@ -330,7 +330,7 @@ main{gap:5px;padding:6px 10px}
 @media(max-width:780px){.app-header{overflow-x:auto;scrollbar-width:thin}
 .app-header .combat-toolbar{flex:none}.app-header .combat-toolbar nav.tabs{flex:none;overflow:visible}
 .app-header .monster-picker{flex:none;grid-template-columns:65px 135px 60px}}
-</style><link rel="stylesheet" href="./homebrew.css?v=1"></head><body>
+</style><link rel="stylesheet" href="./homebrew.css?v=2"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
 <div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button><button data-tab="homebrew" aria-pressed="false">Homebrew</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
 <main>
@@ -361,6 +361,10 @@ main{gap:5px;padding:6px 10px}
     <label class="hb-wide">Name<input id="hb-name" maxlength="80" placeholder="Your custom creature or spell"></label>
    </div>
    <div id="hb-monster-fields" class="hb-fields">
+    <div class="hb-template-bar">
+      <label>Start from an existing monster <select id="hb-template" aria-label="Existing monster template"></select></label>
+      <button type="button" id="hb-use-template">Load template</button>
+    </div>
     <div class="hb-grid">
      <label>Challenge rating<select id="hb-cr"><option>0</option><option>1/8</option><option>1/4</option><option>1/2</option>
       <option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
@@ -402,7 +406,7 @@ main{gap:5px;padding:6px 10px}
    <div class="hb-actionbar"><button type="submit" class="primary" id="hb-save">Save homebrew</button><button type="button" id="hb-new">+ New entry</button></div>
   </form>
   <aside class="hb-library">
-   <h3>My homebrew library</h3>
+   <h3>My homebrew library</h3><p class="hb-caution">Edit, duplicate, or use a saved creation directly in combat.</p>
    <span id="hb-count" class="muted">0 monsters · 0 spells</span>
    <label class="sr-only" for="hb-search">Search my homebrew</label>
    <input id="hb-search" placeholder="Search saved creations">
@@ -738,4 +742,4 @@ $('clear').onclick=()=>output.textContent='Results cleared.';
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice','homebrew'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
 edition.onchange=()=>{roster=[];selected=null;save();updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.'};
 opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
-</script><script src="./homebrew.js?v=2"></script></body></html>
+</script><script src="./homebrew.js?v=3"></script></body></html>
