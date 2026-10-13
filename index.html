@@ -666,7 +666,7 @@ $('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellB
  if(!s.formula){
   message=s.name+' · Level '+level+': '+(s.specialAtLevel?s.specialAtLevel(level):s.special)+'\nDM adjudicates effect.';
   type='Effect / no damage roll';
- }else if(s.name==='Magic Missile'){
+ }else if(s.name==='Magic Missile'&&!s.homebrewId){
   const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));
   total=String(results.reduce((sum,r)=>sum+r.total,0));type='force · sum of all darts';
   message='Magic Missile level '+level+'\nTOTAL: '+total+' force (all '+darts+' darts)\n'
@@ -738,4 +738,4 @@ $('clear').onclick=()=>output.textContent='Results cleared.';
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice','homebrew'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
 edition.onchange=()=>{roster=[];selected=null;save();updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.'};
 opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
-</script><script src="./homebrew.js?v=1"></script></body></html>
+</script><script src="./homebrew.js?v=2"></script></body></html>
