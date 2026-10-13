@@ -330,9 +330,9 @@ main{gap:5px;padding:6px 10px}
 @media(max-width:780px){.app-header{overflow-x:auto;scrollbar-width:thin}
 .app-header .combat-toolbar{flex:none}.app-header .combat-toolbar nav.tabs{flex:none;overflow:visible}
 .app-header .monster-picker{flex:none;grid-template-columns:65px 135px 60px}}
-</style></head><body>
+</style><link rel="stylesheet" href="./homebrew.css?v=1"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
-<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
+<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button><button data-tab="homebrew" aria-pressed="false">Homebrew</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
 <main>
 <div class="warn" id="notice">Working website preview. Edition selectors are available, but only the explicitly listed sample cards have automatic rolls. Full nine-edition catalogs are still in development.</div>
 <section id="monsters" class="panel"><h2>Encounter monsters</h2>
@@ -344,6 +344,75 @@ main{gap:5px;padding:6px 10px}
 <div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="spell-total" id="spellTotal" role="status" aria-live="polite"><span>TOTAL DAMAGE</span><strong id="spellTotalValue">—</strong><small id="spellTotalType">Cast a spell to roll</small></div><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
 <section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><p class="muted">These are 2014 5e reference examples. Other editions require their own rules and are not yet available.</p><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
+
+<section id="homebrew" class="panel hidden" aria-label="Homebrew library">
+ <div class="hb-layout">
+  <form id="hb-form" class="hb-editor" novalidate>
+   <h2>Homebrew creator</h2>
+   <p>Create custom monsters or spells. They appear in the normal combat selectors under the edition you choose.</p>
+   <div class="hb-grid">
+    <label>Type<select id="hb-kind"><option value="monster">Monster</option><option value="spell">Spell</option></select></label>
+    <label>Edition<select id="hb-edition">
+     <option value="ODND">Original D&D</option><option value="BX">B/X</option>
+     <option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option>
+     <option value="3.0">3.0</option><option value="3.5">3.5</option><option value="4e">4e</option>
+     <option value="2014">5e (2014)</option><option value="2024">5e (2024)</option>
+    </select></label>
+    <label class="hb-wide">Name<input id="hb-name" maxlength="80" placeholder="Your custom creature or spell"></label>
+   </div>
+   <div id="hb-monster-fields" class="hb-fields">
+    <div class="hb-grid">
+     <label>Challenge rating<select id="hb-cr"><option>0</option><option>1/8</option><option>1/4</option><option>1/2</option>
+      <option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+      <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
+      <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+      <option>21</option><option>22</option><option>23</option><option>24</option><option>25</option>
+      <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option></select></label>
+     <label>Armor Class<input id="hb-ac" type="number" min="0" max="99" value="13"></label>
+     <label>Hit Points<input id="hb-hp" type="number" min="1" max="99999" value="15"></label>
+     <label class="hb-wide">Traits and special rules<textarea id="hb-traits" maxlength="2500" placeholder="Describe traits, special actions, and conditions for the DM to resolve"></textarea></label>
+    </div>
+    <div class="hb-field-title">Attacks</div>
+    <p>Each attack can be selected on the monster card. Multiattack routines and conditional effects still require DM adjudication.</p>
+    <div id="hb-attacks"></div>
+    <button id="hb-add-attack" type="button">+ Add another attack</button>
+   </div>
+   <div id="hb-spell-fields" class="hb-fields" hidden>
+    <div class="hb-grid">
+     <label>Spell level<select id="hb-level"><option value="0">Cantrip</option><option value="1" selected>1</option>
+      <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+      <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></label>
+     <label class="hb-check"><input id="hb-upcast" type="checkbox">Can upcast</label>
+     <label class="hb-check"><input id="hb-damage-enabled" type="checkbox" checked>Rolls damage</label>
+     <label class="hb-wide">Range, save and targeting<textarea id="hb-save-text" maxlength="750" placeholder="Range 60 ft.; DEX save for half damage"></textarea></label>
+     <label class="hb-wide">Effects, duration and rules<textarea id="hb-effect" maxlength="2500" placeholder="Describe the spell effect, concentration and other special rules"></textarea></label>
+    </div>
+    <div id="hb-damage-fields" class="hb-fields">
+     <div class="hb-field-title">Damage dice</div>
+     <div class="hb-grid">
+      <label>Number of dice<input id="hb-dice-count" type="number" value="2" min="1" max="100"></label>
+      <label>Die sides<input id="hb-dice-sides" type="number" value="6" min="2" max="1000"></label>
+      <label>Modifier<input id="hb-dice-bonus" type="number" value="0" min="-1000" max="1000"></label>
+      <label>Extra dice / upcast level<input id="hb-dice-extra" type="number" value="1" min="0" max="30"></label>
+      <label>Damage type<input id="hb-damage-type" maxlength="40" value="fire"></label>
+     </div>
+    </div>
+   </div>
+   <div class="hb-actionbar"><button type="submit" class="primary" id="hb-save">Save homebrew</button><button type="button" id="hb-new">+ New entry</button></div>
+  </form>
+  <aside class="hb-library">
+   <h3>My homebrew library</h3>
+   <span id="hb-count" class="muted">0 monsters · 0 spells</span>
+   <label class="sr-only" for="hb-search">Search my homebrew</label>
+   <input id="hb-search" placeholder="Search saved creations">
+   <div id="hb-list" aria-live="polite"></div>
+   <div class="hb-backup"><button type="button" id="hb-export">Export JSON backup</button><label class="hb-import-label" for="hb-import">Import JSON</label><input type="file" id="hb-import" accept=".json,application/json"></div>
+   <p class="hb-caution">Saved only in this browser. Export a backup to move entries to another Chromebook, tablet or computer.</p>
+   <div id="hb-status" role="status">Loading homebrew…</div>
+  </aside>
+ </div>
+</section>
 <section id="dice" class="panel hidden" aria-label="Dice roller">
 <div class="dice-workspace">
  <div class="dice-build">
@@ -666,7 +735,7 @@ $('diceTray').onclick=()=>safe(()=>rollDicePool());
 $('diceTray').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();safe(()=>rollDicePool())}};
 updateDicePool();
 $('clear').onclick=()=>output.textContent='Results cleared.';
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice','homebrew'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
 edition.onchange=()=>{roster=[];selected=null;save();updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.'};
 opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
-</script></body></html>
+</script><script src="./homebrew.js?v=1"></script></body></html>
