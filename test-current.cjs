@@ -146,3 +146,99 @@ test('Homebrew old records and multiattack records validate; bad index rejected'
   assert.equal(updated.multiattacks[0].sequence.length,2);
   assert.throws(()=>validate({...monster,multiattacks:[{name:'Invalid',sequence:[0,5]}]}),/index/);
 });
+
+
+test('each monster has independent HP and conditions, including restored legacy saves', () => {
+  const start=inline.indexOf('const CONDITIONS=');
+  const end=inline.indexOf('function secureDie(',start);
+  assert.ok(start>=0&&end>start);
+  const saved=[{name:'Goblin #1',edition:'2014',hp:7,ac:15,actions:[{name:'Scimitar'}],id:'old'}];
+  let written=0;
+  const state=vm.runInNewContext(inline.slice(start,end)+';({makeMonsterInstance,normalizeMonsterInstance,adjustMonsterHp,toggleMonsterCondition,monsterAttackCosts,spendMonsterAttackCosts})',
+    {monsters,roster:saved,save:()=>{written++}});
+  assert.equal(saved[0].currentHp,7);
+  assert.equal(saved[0].maxHp,7);
+  const m=monsters.find(x=>x.name==='Brown Bear');
+  const one=state.makeMonsterInstance(m,'one','Brown Bear #1');
+  const two=state.makeMonsterInstance(m,'two','Brown Bear #2');
+  state.adjustMonsterHp(one,-17);
+  state.toggleMonsterCondition(one,'Prone');
+  assert.equal(one.currentHp,17);
+  assert.equal(two.currentHp,34);
+  assert.equal(two.conditions.length,0);
+  const again=state.makeMonsterInstance(one,'three','Brown Bear #3');
+  assert.equal(again.currentHp,34);
+  assert.equal(again.conditions.length,0);
+  assert.ok(written>=2);
+});
+
+test('Manticore ammunition is per instance and spent atomically', () => {
+  const start=inline.indexOf('const CONDITIONS=');
+  const end=inline.indexOf('function secureDie(',start);
+  const state=vm.runInNewContext(inline.slice(start,end)+';({makeMonsterInstance,monsterAttackCosts,spendMonsterAttackCosts,normalizeMonsterInstance})',
+    {monsters,roster:[],save:()=>{}});
+  const template=monsters.find(m=>m.name==='Manticore'&&m.edition==='2014');
+  const a=state.makeMonsterInstance(template,'a','Manticore #1');
+  const b=state.makeMonsterInstance(template,'b','Manticore #2');
+  assert.equal(a.resourceState[0].remaining,24);
+  const costs=state.monsterAttackCosts(a,'r:1');
+  assert.equal(costs.get('Tail Spikes'),3);
+  state.spendMonsterAttackCosts(a,costs);
+  assert.equal(a.resourceState[0].remaining,21);
+  assert.equal(b.resourceState[0].remaining,24);
+  a.resourceState[0].remaining=2;
+  assert.throws(()=>state.monsterAttackCosts(a,'r:1'),/Insufficient/);
+  assert.equal(a.resourceState[0].remaining,2);
+  const old=JSON.parse(JSON.stringify(template));
+  old.id='legacy';old.name='Manticore #1';delete old.resourceState;delete old.resources;
+  state.normalizeMonsterInstance(old);
+  assert.equal(old.resourceState[0].remaining,24);
+});
+
+test('caster concentration replaces per-caster spells but preserves another caster', () => {
+  const start=inline.indexOf("const CONCENTRATION_KEY=");
+  const end=inline.indexOf('function updateSpellDetails(){',start);
+  assert.ok(start>=0&&end>start);
+  const storage=new Map();
+  const dom={
+    spellCaster:{value:'Caster 1'},
+    concentrationStatus:{textContent:''},
+    endConcentration:{disabled:true}
+  };
+  const methods=vm.runInNewContext(inline.slice(start,end)+';({setConcentration,getConcentration,endConcentration,refreshConcentration})',{
+    localStorage:{getItem:key=>storage.get(key)||null,setItem:(k,v)=>storage.set(k,v)},
+    $:id=>dom[id],edition:{value:'2014'},console,display:()=>{}
+  });
+  methods.setConcentration('2014','Caster 1','Bless',1);
+  methods.setConcentration('2014','Caster 2','Moonbeam',2);
+  const prior=methods.setConcentration('2014','Caster 1','Bane',1);
+  assert.equal(prior.spell,'Bless');
+  assert.equal(methods.getConcentration('2014','Caster 1').spell,'Bane');
+  assert.equal(methods.getConcentration('2014','Caster 2').spell,'Moonbeam');
+  assert.equal(methods.getConcentration('2024','Caster 1'),null);
+  assert.equal(methods.endConcentration('2014','Caster 1'),true);
+  assert.equal(methods.getConcentration('2014','Caster 1'),null);
+  assert.ok(storage.get('cc-concentration-v1').includes('Moonbeam'));
+});
+
+test('2024 Goblin Warrior has extra advantage damage and separate crit dice', () => {
+  const m=monsters.find(x=>x.name==='Goblin Warrior'&&x.edition==='2024');
+  assert.ok(m);
+  const normal=combatRNG([12]).resolveMonsterChoice(m,'a:0','normal').strikes[0];
+  const adv=combatRNG([3,12]).resolveMonsterChoice(m,'a:0','advantage').strikes[0];
+  const critical=combatRNG([20,5]).resolveMonsterChoice(m,'a:0','advantage').strikes[0];
+  assert.equal(normal.damage,5);
+  assert.equal(adv.damage,8);
+  assert.equal(critical.damage,14);
+});
+
+test('spell concentration is explicit, and 2024 verified spells remain available', () => {
+  for(const name of ['Bless','Bane','Moonbeam','Hold Person','Fly','Silence','Banishment']){
+    const s=spells.find(x=>x.name===name&&x.edition==='2014');
+    assert.equal(s?.concentration,true,name+' should require concentration');
+  }
+  assert.equal(spells.find(x=>x.name==='Fireball'&&x.edition==='2014').concentration,undefined);
+  assert.equal(spells.find(x=>x.name==='Bless'&&x.edition==='2024').concentration,true);
+  assert.equal(spells.find(x=>x.name==='Magic Missile'&&x.edition==='2024').formula(2)[0],4);
+  assert.equal(spells.find(x=>x.name==='Shield'&&x.edition==='2024').base,1);
+});
