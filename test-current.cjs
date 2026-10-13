@@ -242,3 +242,23 @@ test('spell concentration is explicit, and 2024 verified spells remain available
   assert.equal(spells.find(x=>x.name==='Magic Missile'&&x.edition==='2024').formula(2)[0],4);
   assert.equal(spells.find(x=>x.name==='Shield'&&x.edition==='2024').base,1);
 });
+
+test('generic d6 recharge uses only configured resources and restores on threshold', () => {
+  const start = inline.indexOf('function rollMonsterRecharge(');
+  const end = inline.indexOf('function restoreMonsterResources(',start);
+  assert.ok(start >= 0 && end > start);
+  const source = inline.slice(start,end);
+  for (const [roll,expected] of [[4,false],[5,true],[6,true]]) {
+    let saved=0;
+    const context={secureDie:()=>roll,save:()=>{saved++},console};
+    const recharge=vm.runInNewContext(source+';rollMonsterRecharge',context);
+    const monster={resourceState:[{name:'Breath',max:1,remaining:0,rechargeMin:5},{name:'Spikes',max:24,remaining:12,rechargeMin:null}]};
+    const result=recharge(monster,'Breath');
+    assert.equal(result.roll,roll);
+    assert.equal(result.recharged,expected);
+    assert.equal(monster.resourceState[0].remaining,expected?1:0);
+    assert.equal(monster.resourceState[1].remaining,12);
+    assert.equal(saved,1);
+    assert.throws(()=>recharge(monster,'Spikes'),/No d6 recharge/);
+  }
+});
