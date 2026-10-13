@@ -1,2 +1,81 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>D&D Combat Companion — Deployment Setup</title><style>body{font:16px system-ui;background:#111827;color:#f9fafb;max-width:720px;margin:6rem auto;padding:1rem;line-height:1.6}h1{color:#f8d17b}a{color:#93c5fd}.panel{border:1px solid #4b5563;border-radius:12px;padding:1.5rem;background:#1f2937}</style></head><body><div class="panel"><h1>D&D Combat Companion</h1><p><strong>Website deployment staging page.</strong></p><p>The combat application is not deployed here yet. The complete site source must be committed and verified before public testing.</p><p>Current local preview has the nine-edition interface, monster encounter controls, spellcasting, and offline caching foundation. It is not yet a final tested release.</p><p><a href="https://github.com/cbw29512/DnD-Combat-Companion">View development repository</a></p></div></body></html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>D&D Combat Companion — Browser Test</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif}body{margin:0;background:#101827;color:#f4f6fb}header{background:#1d293b;border-bottom:1px solid #35445c;padding:18px max(15px,calc((100vw - 1000px)/2))}h1{margin:0;color:#ffd377}header p{margin:6px 0;color:#c6d2df}main{max-width:1000px;margin:auto;padding:16px}button,select,input{font:inherit;color:inherit;background:#28374b;border:1px solid #61748d;border-radius:8px;padding:10px;max-width:100%}button{cursor:pointer}button:hover{background:#395572}button:focus-visible,select:focus-visible{outline:3px solid #fbc569}button.primary{background:#735320;border-color:#e8be66;font-weight:700}nav{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.panel{background:#1c293b;border:1px solid #3d5068;border-radius:12px;padding:16px;margin:12px 0}.row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0}.item{border:1px solid #465b74;border-radius:8px;padding:12px;margin:8px 0}.item.selected{border-color:#e8be66}label{display:block;margin:12px 0 5px}small,.muted{color:#b5c6d6}.out{white-space:pre-wrap;background:#0d1724;padding:14px;border-radius:8px;line-height:1.65;min-height:30px}.warn{background:#4d3517;color:#ffe6a6;padding:9px;border-radius:7px}.hidden{display:none!important}.tabs button[aria-pressed=true]{background:#77551e;border-color:#ffd377}h2{margin-top:0}.stat{font-size:1.1rem;font-weight:700;color:#ffd377}#notice{position:relative}input[type=number]{width:100px}@media(max-width:550px){nav button{flex:1 1 40%}button{min-height:44px}.panel{padding:12px}} 
+</style></head><body>
+<header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
+<main>
+<div class="warn" id="notice">Working website preview. Edition selectors are available, but only the explicitly listed sample cards have automatic rolls. Full nine-edition catalogs are still in development.</div>
+<label for="edition">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select>
+<nav class="tabs" aria-label="Sections"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs & Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav>
+<section id="monsters" class="panel"><h2>Encounter monsters</h2>
+<label for="cr">Challenge rating</label><select id="cr"></select>
+<label for="monster">Choose monster</label><select id="monster"></select>
+<div class="row"><button class="primary" id="add">+ Add monster</button><button id="addcopy">+ Another copy</button></div>
+<div id="roster" aria-live="polite"></div><div id="actions"></div>
+</section>
+<section id="spells" class="panel hidden"><h2>Spells</h2>
+<label for="spell">Choose spell</label><select id="spell"></select>
+<div id="upcastArea"><label for="slot">Cast at level</label><select id="slot"></select></div>
+<div id="spellInfo" class="item"></div>
+<button class="primary" id="cast">Cast spell</button>
+</section>
+<section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
+<section id="dice" class="panel hidden"><h2>Secure dice</h2><div class="row"><label>Count <input type="number" id="diceCount" min="1" max="100" value="1"></label><label>Faces <select id="diceSides"><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option><option selected>20</option><option>100</option></select></label><label>Modifier <input type="number" id="diceMod" min="-1000" max="1000" value="0"></label></div><button class="primary" id="rollDice">Roll</button></section>
+<section class="panel"><h2>Roll results</h2><div class="out" id="output" role="status">Choose a monster attack, spell or dice roll. The DM determines hits, targets, saving throws and damage applied.</div><button id="clear">Clear results</button></section>
+<small>Randomness: Web Crypto with rejection sampling. No automatic target selection or HP subtraction. This preview saves its monster roster locally; clearing browser storage resets it.</small>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),edition=$('edition'),output=$('output');
+const monsters=[
+{edition:'2014',name:'Goblin',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar',toHit:4,dice:[1,6,2],type:'slashing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
+{edition:'2014',name:'Ogre',cr:'2',hp:59,ac:11,actions:[{name:'Greatclub',toHit:6,dice:[2,8,4],type:'bludgeoning'},{name:'Javelin',toHit:6,dice:[2,6,4],type:'piercing'}]},
+{edition:'2024',name:'Goblin (sample)',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar (sample)',toHit:4,dice:[1,6,2],type:'slashing'}]}
+];
+const spells=[
+{edition:'2014',name:'Fireball',base:3,upcast:true,formula:l=>[8+(l-3),6,0],save:'Dexterity saving throw; half damage on success',type:'fire'},
+{edition:'2014',name:'Magic Missile',base:1,upcast:true,formula:l=>[3+(l-1),4,1],special:'Each dart rolls 1d4+1 force; DM assigns the darts',type:'force'},
+{edition:'2014',name:'Shield',base:1,upcast:false,special:'Reaction; +5 AC until the start of your next turn (including against triggering attack). No damage roll.'},
+{edition:'2024',name:'Fireball',base:3,upcast:true,formula:l=>[8+(l-3),6,0],save:'Dexterity saving throw; half damage on success',type:'fire'}
+];
+const rules=[
+['Blinded','Cannot see; attack rolls against creature have advantage; creature attacks at disadvantage; fails checks requiring sight.'],
+['Charmed','Cannot attack charmer or target charmer with harmful abilities or magical effects; charmer has advantage on social interaction checks.'],
+['Deafened','Cannot hear and automatically fails checks requiring hearing.'],
+['Frightened','Disadvantage on ability checks and attack rolls while source of fear is in line of sight; cannot willingly move closer.'],
+['Grappled','Speed becomes 0; cannot benefit from speed bonuses.'],
+['Incapacitated','Cannot take actions or reactions.'],
+['Invisible','Cannot be seen without special sense/magic; attacks have advantage and attacks against creature have disadvantage (2014 rules).'],
+['Paralyzed','Incapacitated, cannot move/speak, fails STR and DEX saves; attacks have advantage; hits from within 5 feet are critical.'],
+['Petrified','Transformed into solid inanimate substance; incapacitated, cannot move/speak, unaware; attack rolls against have advantage; fails STR/DEX saves; resistance to all damage; immune to poison/disease.'],
+['Poisoned','Disadvantage on attack rolls and ability checks.'],
+['Prone','Can crawl or stand up; attacks at disadvantage; adjacent attackers have advantage, farther attackers disadvantage.'],
+['Restrained','Speed 0; its attacks disadvantaged; incoming attacks advantaged; disadvantage on DEX saves.'],
+['Stunned','Incapacitated, cannot move, speaks only falteringly; fails STR/DEX saves; attacks against have advantage.'],
+['Unconscious','Incapacitated, cannot move/speak, unaware; drops held items and falls prone; fails STR/DEX saves; attacks against advantage; within 5 feet hits critical.'],
+['Damage types','Acid · Bludgeoning · Cold · Fire · Force · Lightning · Necrotic · Piercing · Poison · Psychic · Radiant · Slashing · Thunder. Types matter for resistance, immunity and vulnerability.']
+];
+let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if(Array.isArray(d))roster=d.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string').slice(0,100)}catch(e){console.warn('Roster recovery failed',e)}
+let selected=null;
+function secureDie(sides){if(!Number.isInteger(sides)||sides<2||sides>1000000)throw Error('Invalid dice sides');if(!globalThis.crypto?.getRandomValues||!isSecureContext)throw Error('Secure Web Crypto unavailable: open through HTTPS.');const bound=4294967296-Math.floor(4294967296/sides)%sides,buf=new Uint32Array(1);for(let i=0;i<100;i++){crypto.getRandomValues(buf);if(buf[0]<bound)return buf[0]%sides+1}throw Error('Secure randomness retry exhausted')}
+function roll(n,s,b=0){if(!Number.isInteger(n)||n<1||n>100||!Number.isInteger(b)||Math.abs(b)>1000)throw Error('Unsafe dice formula');const dice=Array.from({length:n},()=>secureDie(s));return{dice,total:dice.reduce((a,v)=>a+v,b),bonus:b}}
+function display(s){output.textContent=String(s)+'\n\n'+output.textContent.slice(0,3000)}
+function safe(fn){try{fn()}catch(e){console.error('Combat Companion error',e);display('ERROR: '+e.message)}}
+function save(){try{localStorage.setItem('cc-roster',JSON.stringify(roster))}catch(e){console.warn('Could not persist roster',e)}}
+function opt(sel,values){sel.replaceChildren();for(const [value,label] of values){const o=document.createElement('option');o.value=value;o.textContent=label;sel.append(o)}}
+function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.value),crs=[...new Set(list.map(m=>m.cr))];opt($('cr'),crs.length?crs.map(x=>[x,x]):[['','No verified cards for this edition']]);updateMonsterList()}
+function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value);opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
+function updateSpells(){const list=spells.filter(s=>s.edition===edition.value);opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
+function updateSpellDetails(){const s=spells[Number($('spell').value)];$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
+function render(){const root=$('roster');root.replaceChildren();for(const m of roster){const div=document.createElement('div');div.className='item'+(m.id===selected?' selected':'');const title=document.createElement('strong');title.textContent=m.name;div.append(title,document.createTextNode(' · '+m.hp+' HP · AC '+m.ac+' '));const choose=document.createElement('button');choose.textContent='Select';choose.onclick=()=>{selected=m.id;render()};const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render()};div.append(choose,document.createTextNode(' '),remove);root.append(div)}const act=$('actions');act.replaceChildren();const m=roster.find(x=>x.id===selected);if(m){const h=document.createElement('h3');h.textContent=m.name+' — Attacks';act.append(h);for(const a of m.actions||[]){const b=document.createElement('button');b.textContent='Attack: '+a.name;b.onclick=()=>safe(()=>{const hit=roll(1,20,a.toHit),damage=roll(...a.dice);display(m.name+' — '+a.name+'\nTo hit: d20 ['+hit.dice+'] '+(a.toHit>=0?'+':'')+a.toHit+' = '+hit.total+'\nPotential damage: ['+damage.dice.join(', ')+'] '+(damage.bonus>=0?'+':'')+damage.bonus+' = '+damage.total+' '+a.type+'\nDM chooses target, determines hit and applies damage.');});act.append(b,document.createTextNode(' '))}}}
+function addMonster(){const source=monsters[Number($('monster').value)];if(!source)return;const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
+$('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);$('addcopy').onclick=()=>safe(addMonster);
+$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{const s=spells[Number($('spell').value)];if(!s){display('No verified spell selected');return}const level=s.upcast?Number($('slot').value):s.base;if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');if(!s.formula){display(s.name+': '+s.special+'\nDM adjudicates effect.');return}if(s.name==='Magic Missile'){const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));display('Magic Missile level '+level+': '+results.map((r,i)=>'Dart '+(i+1)+': '+r.total).join(' | ')+'\nDM assigns darts to targets.');return}const damage=roll(...s.formula(level));display(s.name+' level '+level+'\nDice: ['+damage.dice.join(', ')+']\nDamage: '+damage.total+' '+s.type+'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.')});
+$('rule').onchange=()=>{$('ruleText').textContent=rules[Number($('rule').value)]?.[1]||''};
+$('rollDice').onclick=()=>safe(()=>{const n=Number($('diceCount').value),s=Number($('diceSides').value),b=Number($('diceMod').value),r=roll(n,s,b);display(n+'d'+s+(b>=0?'+':'')+b+' → ['+r.dice.join(', ')+'] = '+r.total)});
+$('clear').onclick=()=>output.textContent='Results cleared.';
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)})});
+edition.onchange=()=>{roster=[];selected=null;save();updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.'};
+opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
+</script></body></html>
