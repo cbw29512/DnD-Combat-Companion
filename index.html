@@ -633,6 +633,7 @@ function makeMonsterSilhouette(name){
 }
 
 function resolveStrike(action,edition,mode){
+ if(!['2014','2024'].includes(edition))throw Error('Automatic attacks for '+edition+' require an edition-specific rules engine. Use the Dice tab for manual rolls.');
  if(!action||!Array.isArray(action.dice)||action.dice.length!==3)throw Error('Invalid attack data.');
  if(!['normal','advantage','disadvantage'].includes(mode))throw Error('Invalid attack mode.');
  const d1=secureDie(20),d2=mode==='normal'?null:secureDie(20);
