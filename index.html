@@ -48,6 +48,13 @@
 .monster-silhouette{width:100%;height:100%;max-width:210px;filter:drop-shadow(0 8px 7px #0009)}
 .result-num.critical{border:2px solid #32d583;background:#124437}.result-num.critical strong{color:#a7f3d0}
 .result-num.fumble{border:2px solid #f87171;background:#52242a}.result-num.fumble strong{color:#fecaca}
+
+/* Brief non-blocking critical/fumble screen flash. */
+#attack-flash{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0;visibility:hidden}
+#attack-flash.flash-crit{background:rgba(20,220,96,.55);visibility:visible;animation:attack-flash .6s ease-out forwards}
+#attack-flash.flash-fumble{background:rgba(240,32,55,.55);visibility:visible;animation:attack-flash .6s ease-out forwards}
+@keyframes attack-flash{0%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#attack-flash.flash-crit,#attack-flash.flash-fumble{animation:attack-flash .18s linear forwards}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -70,6 +77,7 @@
 <section class="panel"><h2>Roll results</h2><div class="out" id="output" role="status">Choose a monster attack, spell or dice roll. The DM determines hits, targets, saving throws and damage applied.</div><button id="clear">Clear results</button></section>
 <small>Randomness: Web Crypto with rejection sampling. No automatic target selection or HP subtraction. This preview saves its monster roster locally; clearing browser storage resets it.</small>
 </main>
+<div id="attack-flash" aria-hidden="true"></div>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),edition=$('edition'),output=$('output');
@@ -123,6 +131,16 @@ let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if
 let selected=null;
 function secureDie(sides){if(!Number.isInteger(sides)||sides<2||sides>1000000)throw Error('Invalid dice sides');if(!globalThis.crypto?.getRandomValues||!isSecureContext)throw Error('Secure Web Crypto unavailable: open through HTTPS.');const bound=4294967296-Math.floor(4294967296/sides)%sides,buf=new Uint32Array(1);for(let i=0;i<100;i++){crypto.getRandomValues(buf);if(buf[0]<bound)return buf[0]%sides+1}throw Error('Secure randomness retry exhausted')}
 function roll(n,s,b=0){if(!Number.isInteger(n)||n<1||n>100||!Number.isInteger(b)||Math.abs(b)>1000)throw Error('Unsafe dice formula');const dice=Array.from({length:n},()=>secureDie(s));return{dice,total:dice.reduce((a,v)=>a+v,b),bonus:b}}
+function flashAttackResult(critical,fumble){
+ try{
+  if(!critical&&!fumble)return;
+  const overlay=$('attack-flash');if(!overlay)return;
+  overlay.classList.remove('flash-crit','flash-fumble');
+  void overlay.offsetWidth; // restart animation even on consecutive criticals
+  overlay.classList.add(critical?'flash-crit':'flash-fumble');
+  overlay.addEventListener('animationend',()=>overlay.classList.remove('flash-crit','flash-fumble'),{once:true});
+ }catch(e){console.warn('Attack feedback animation unavailable',e)}
+}
 function display(s){output.textContent=String(s)+'\n\n'+output.textContent.slice(0,3000)}
 function safe(fn){try{fn()}catch(e){console.error('Combat Companion error',e);display('ERROR: '+e.message)}}
 function save(){try{localStorage.setItem('cc-roster',JSON.stringify(roster))}catch(e){console.warn('Could not persist roster',e)}}
@@ -179,6 +197,7 @@ function render(){
    const natural=second===null?first:(mode.value==='advantage'?Math.max(first,second):Math.min(first,second));
    const total=natural+a.toHit;
    const critical=natural===20, fumble=natural===1;
+   flashAttackResult(critical,fumble);
    // Standard 2014/2024 5e critical hits double damage dice, not flat modifiers.
    // Other editions need their own verified critical rules and are not guessed here.
    const d=roll(...a.dice);
