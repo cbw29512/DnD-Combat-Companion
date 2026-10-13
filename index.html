@@ -2,6 +2,24 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>D&D Combat Companion — Browser Test</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,Arial,sans-serif}body{margin:0;background:#101827;color:#f4f6fb}header{background:#1d293b;border-bottom:1px solid #35445c;padding:18px max(15px,calc((100vw - 1000px)/2))}h1{margin:0;color:#ffd377}header p{margin:6px 0;color:#c6d2df}main{max-width:1000px;margin:auto;padding:16px}button,select,input{font:inherit;color:inherit;background:#28374b;border:1px solid #61748d;border-radius:8px;padding:10px;max-width:100%}button{cursor:pointer}button:hover{background:#395572}button:focus-visible,select:focus-visible{outline:3px solid #fbc569}button.primary{background:#735320;border-color:#e8be66;font-weight:700}nav{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.panel{background:#1c293b;border:1px solid #3d5068;border-radius:12px;padding:16px;margin:12px 0}.row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0}.item{border:1px solid #465b74;border-radius:8px;padding:12px;margin:8px 0}.item.selected{border-color:#e8be66}label{display:block;margin:12px 0 5px}small,.muted{color:#b5c6d6}.out{white-space:pre-wrap;background:#0d1724;padding:14px;border-radius:8px;line-height:1.65;min-height:30px}.warn{background:#4d3517;color:#ffe6a6;padding:9px;border-radius:7px}.hidden{display:none!important}.tabs button[aria-pressed=true]{background:#77551e;border-color:#ffd377}h2{margin-top:0}.stat{font-size:1.1rem;font-weight:700;color:#ffd377}#notice{position:relative}input[type=number]{width:100px}@media(max-width:550px){nav button{flex:1 1 40%}button{min-height:44px}.panel{padding:12px}} 
+
+/* Card-first responsive interface */
+.card-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin:18px 0}
+.flip-card{perspective:1300px;min-height:350px}
+.flip-inner{position:relative;min-height:350px;transform-style:preserve-3d;transition:transform .65s ease}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px double #bf9449;border-radius:17px;padding:13px;background:linear-gradient(145deg,#47321e,#182137 35%,#10192c 80%,#5c4427);box-shadow:0 10px 25px #0008;overflow:auto}
+.card-back{transform:rotateY(180deg);background:linear-gradient(160deg,#17243b,#302719 95%)}
+.card-art{height:155px;display:grid;place-items:center;border-radius:10px;background:radial-gradient(ellipse at 60% 25%,#85683f 1%,#2d354c 55%,#101521 95%);border:1px solid #967747;font-size:70px;text-shadow:0 5px 15px black}
+.card-name{color:#f9d28a;font-family:Georgia,serif;font-size:1.25rem;margin:9px 0 3px}
+.card-meta{color:#cad4e4;font-size:.84rem}
+.card-actions{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+.card-actions button{flex:1 1 auto;font-size:.9rem}
+.card-roll{background:#0c1421;border:1px solid #665638;border-radius:9px;white-space:pre-wrap;padding:10px;margin:10px 0;font-size:.87rem;line-height:1.5}
+.card-back h3{color:#f9d28a}
+#spellCard{max-width:410px;margin:16px auto;min-height:420px}#spellCard .flip-inner{min-height:420px}
+#spellCard .card-art{height:175px}
+@media(prefers-reduced-motion:reduce){.flip-inner{transition:none}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -12,7 +30,7 @@
 <label for="cr">Challenge rating</label><select id="cr"></select>
 <label for="monster">Choose monster</label><select id="monster"></select>
 <div class="row"><button class="primary" id="add">+ Add monster</button><button id="addcopy">+ Another copy</button></div>
-<div id="roster" aria-live="polite"></div><div id="actions"></div>
+<h3>Encounter cards</h3><div id="roster" class="card-gallery" aria-live="polite"></div><div id="actions" class="hidden"></div>
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
 <label for="spell">Choose spell</label><select id="spell"></select>
@@ -30,6 +48,10 @@
 const $=id=>document.getElementById(id),edition=$('edition'),output=$('output');
 const monsters=[
 {edition:'2014',name:'Goblin',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar',toHit:4,dice:[1,6,2],type:'slashing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
+{edition:'2014',name:'Skeleton',cr:'1/4',hp:13,ac:13,actions:[{name:'Shortsword',toHit:4,dice:[1,6,2],type:'piercing'},{name:'Shortbow',toHit:4,dice:[1,6,2],type:'piercing'}]},
+{edition:'2014',name:'Zombie',cr:'1/4',hp:22,ac:8,actions:[{name:'Slam',toHit:3,dice:[1,6,1],type:'bludgeoning'}]},
+{edition:'2014',name:'Wolf',cr:'1/4',hp:11,ac:13,actions:[{name:'Bite',toHit:4,dice:[2,4,2],type:'piercing; prone save DC 11 Strength'}]},
+{edition:'2014',name:'Orc',cr:'1/2',hp:15,ac:13,actions:[{name:'Greataxe',toHit:5,dice:[1,12,3],type:'slashing'},{name:'Javelin',toHit:5,dice:[1,6,3],type:'piercing'}]},
 {edition:'2014',name:'Ogre',cr:'2',hp:59,ac:11,actions:[{name:'Greatclub',toHit:6,dice:[2,8,4],type:'bludgeoning'},{name:'Javelin',toHit:6,dice:[2,6,4],type:'piercing'}]},
 {edition:'2024',name:'Goblin (sample)',cr:'1/4',hp:7,ac:15,actions:[{name:'Scimitar (sample)',toHit:4,dice:[1,6,2],type:'slashing'}]}
 ];
@@ -67,11 +89,39 @@ function opt(sel,values){sel.replaceChildren();for(const [value,label] of values
 function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.value),crs=[...new Set(list.map(m=>m.cr))];opt($('cr'),crs.length?crs.map(x=>[x,x]):[['','No verified cards for this edition']]);updateMonsterList()}
 function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value);opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
 function updateSpells(){const list=spells.filter(s=>s.edition===edition.value);opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
-function updateSpellDetails(){const s=spells[Number($('spell').value)];$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
-function render(){const root=$('roster');root.replaceChildren();for(const m of roster){const div=document.createElement('div');div.className='item'+(m.id===selected?' selected':'');const title=document.createElement('strong');title.textContent=m.name;div.append(title,document.createTextNode(' · '+m.hp+' HP · AC '+m.ac+' '));const choose=document.createElement('button');choose.textContent='Select';choose.onclick=()=>{selected=m.id;render()};const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render()};div.append(choose,document.createTextNode(' '),remove);root.append(div)}const act=$('actions');act.replaceChildren();const m=roster.find(x=>x.id===selected);if(m){const h=document.createElement('h3');h.textContent=m.name+' — Attacks';act.append(h);for(const a of m.actions||[]){const b=document.createElement('button');b.textContent='Attack: '+a.name;b.onclick=()=>safe(()=>{const hit=roll(1,20,a.toHit),damage=roll(...a.dice);display(m.name+' — '+a.name+'\nTo hit: d20 ['+hit.dice+'] '+(a.toHit>=0?'+':'')+a.toHit+' = '+hit.total+'\nPotential damage: ['+damage.dice.join(', ')+'] '+(damage.bonus>=0?'+':'')+damage.bonus+' = '+damage.total+' '+a.type+'\nDM chooses target, determines hit and applies damage.');});act.append(b,document.createTextNode(' '))}}}
+function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellCard').classList.remove('flipped');$('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
+function render(){
+ const root=$('roster');root.replaceChildren();
+ for(const m of roster){
+  const outer=document.createElement('div');outer.className='flip-card';outer.dataset.id=m.id;
+  const inner=document.createElement('div');inner.className='flip-inner';
+  const front=document.createElement('article');front.className='card-face';
+  const art=document.createElement('div');art.className='card-art';art.textContent=/dragon/i.test(m.name)?'🐉':/wolf/i.test(m.name)?'🐺':/skeleton/i.test(m.name)?'☠':/zombie/i.test(m.name)?'🧟':/ogre/i.test(m.name)?'👹':'⚔';art.setAttribute('aria-hidden','true');
+  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
+  const meta=document.createElement('p');meta.className='card-meta';meta.textContent='CR '+m.cr+' · AC '+m.ac+' · HP '+m.hp;
+  const controls=document.createElement('div');controls.className='card-actions';
+  const attack=document.createElement('button');attack.className='primary';attack.textContent='⚔ ATTACK';
+  const flip=document.createElement('button');flip.textContent='Flip / Abilities';flip.onclick=()=>outer.classList.add('flipped');
+  const duplicate=document.createElement('button');duplicate.textContent='+ Copy';duplicate.onclick=()=>safe(()=>{if(roster.length>=100)throw Error('Encounter limited to 100 monsters');const copy={...m,id:'m'+Date.now().toString(36)+secureDie(1000000).toString(36),name:m.name.replace(/ #\\d+$/,'')+' #'+(roster.filter(x=>x.name.startsWith(m.name.replace(/ #\\d+$/,'')+' #')).length+1)};roster.push(copy);selected=copy.id;save();render()});
+  const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render()};
+  const back=document.createElement('article');back.className='card-face card-back';
+  const title=document.createElement('h3');title.textContent=m.name+' — abilities';back.append(title);
+  const actionsText=document.createElement('p');actionsText.className='card-meta';actionsText.textContent=(m.actions||[]).map(x=>x.name+' +'+x.toHit+' · '+x.dice[0]+'d'+x.dice[1]+'+'+x.dice[2]+' '+x.type).join(' | ');back.append(actionsText);
+  const result=document.createElement('div');result.className='card-roll';result.textContent='Tap ATTACK to roll the chosen attack. DM determines hits and targets.';
+  const choose=document.createElement('select');choose.setAttribute('aria-label','Attack routine for '+m.name);
+  opt(choose,(m.actions||[]).map((x,i)=>[String(i),x.name]));
+  const resolve=()=>safe(()=>{const x=m.actions[Number(choose.value)];if(!x)throw Error('Attack not available');const h=roll(1,20,x.toHit),d=roll(...x.dice);const msg=m.name+' — '+x.name+'\\nTo hit: ['+h.dice.join(', ')+'] + '+x.toHit+' = '+h.total+'\\nPotential damage: ['+d.dice.join(', ')+'] + '+d.bonus+' = '+d.total+' '+x.type+'\\nDM decides hit, target, and damage.';result.textContent=msg;display(msg);selected=m.id;outer.classList.add('flipped')});
+  attack.onclick=resolve;
+  const backAttack=document.createElement('button');backAttack.className='primary';backAttack.textContent='⚔ ATTACK';backAttack.onclick=resolve;
+  const backFlip=document.createElement('button');backFlip.textContent='Return to artwork';backFlip.onclick=()=>outer.classList.remove('flipped');
+  controls.append(attack,flip,duplicate,remove);front.append(art,name,meta,choose,controls);
+  back.append(result,backAttack,document.createTextNode(' '),backFlip);
+  inner.append(front,back);outer.append(inner);root.append(outer);
+ }
+}
 function addMonster(){const source=monsters[Number($('monster').value)];if(!source)return;const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
 $('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);$('addcopy').onclick=()=>safe(addMonster);
-$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{const s=spells[Number($('spell').value)];if(!s){display('No verified spell selected');return}const level=s.upcast?Number($('slot').value):s.base;if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');if(!s.formula){display(s.name+': '+s.special+'\nDM adjudicates effect.');return}if(s.name==='Magic Missile'){const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));display('Magic Missile level '+level+': '+results.map((r,i)=>'Dart '+(i+1)+': '+r.total).join(' | ')+'\nDM assigns darts to targets.');return}const damage=roll(...s.formula(level));display(s.name+' level '+level+'\nDice: ['+damage.dice.join(', ')+']\nDamage: '+damage.total+' '+s.type+'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.')});
+$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{const s=spells[Number($('spell').value)];if(!s){display('No verified spell selected');return}const level=s.upcast?Number($('slot').value):s.base;if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');if(!s.formula){display(s.name+': '+s.special+'\nDM adjudicates effect.');return}if(s.name==='Magic Missile'){const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));display('Magic Missile level '+level+': '+results.map((r,i)=>'Dart '+(i+1)+': '+r.total).join(' | ')+'\nDM assigns darts to targets.');return}const damage=roll(...s.formula(level));display(s.name+' level '+level+'\nDice: ['+damage.dice.join(', ')+']\nDamage: '+damage.total+' '+s.type+'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.')});
 $('rule').onchange=()=>{$('ruleText').textContent=rules[Number($('rule').value)]?.[1]||''};
 $('rollDice').onclick=()=>safe(()=>{const n=Number($('diceCount').value),s=Number($('diceSides').value),b=Number($('diceMod').value),r=roll(n,s,b);display(n+'d'+s+(b>=0?'+':'')+b+' → ['+r.dice.join(', ')+'] = '+r.total)});
 $('clear').onclick=()=>output.textContent='Results cleared.';
