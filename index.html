@@ -394,6 +394,33 @@ const spells=[
 {edition:'2014',name:'Fireball',base:3,upcast:true,formula:l=>[8+(l-3),6,0],save:'Dexterity saving throw; half damage on success',type:'fire'},
 {edition:'2014',name:'Magic Missile',base:1,upcast:true,formula:l=>[3+(l-1),4,1],special:'Each dart rolls 1d4+1 force; DM assigns the darts',type:'force'},
 {edition:'2014',name:'Shield',base:1,upcast:false,special:'Reaction; +5 AC until the start of your next turn (including against triggering attack). No damage roll.'},
+{edition:'2014',name:"Burning Hands",base:1,upcast:true,formula:l=>[3+(l-1)*1,6,0],save:"Self: 15-ft cone; Dexterity save half. Exposed flammables ignite.",type:"fire"},
+{edition:'2014',name:"Thunderwave",base:1,upcast:true,formula:l=>[2+(l-1)*1,8,0],save:"Self: 15-ft cube; Constitution save half, failure pushes 10 ft.",type:"thunder"},
+{edition:'2014',name:"Shatter",base:2,upcast:true,formula:l=>[3+(l-2)*1,8,0],save:"60-ft range, 10-ft radius. Constitution save half; creatures made of inorganic material have disadvantage.",type:"thunder"},
+{edition:'2014',name:'Cloud of Daggers',base:2,upcast:true,formula:l=>[4+2*(l-2),4,0],triggered:true,save:'5-ft cube; no save. Damage when creature first enters on a turn or starts there. Concentration up to 1 minute.',type:'slashing'},
+{edition:'2014',name:'Moonbeam',base:2,upcast:true,formula:l=>[2+(l-2),10,0],triggered:true,save:'5-ft-radius 40-ft-high cylinder; Constitution save half. Damage on entry/start of turn, not casting. Concentration 1 minute.',type:'radiant'},
+{edition:'2014',name:"Lightning Bolt",base:3,upcast:true,formula:l=>[8+(l-3)*1,6,0],save:"Self: 100-ft line 5-ft wide; Dexterity save half.",type:"lightning"},
+{edition:'2014',name:'Call Lightning',base:3,upcast:true,formula:l=>[3+(l-3),10,0],save:'120-ft range, 5-ft-radius strike; Dexterity save half. Repeat with action while concentrating. Existing outdoor storm adds 1d10 (roll separately).',type:'lightning'},
+{edition:'2014',name:"Cone of Cold",base:5,upcast:true,formula:l=>[8+(l-5)*1,8,0],save:"Self: 60-ft cone; Constitution save half. Creatures killed freeze into statues until thawed.",type:"cold"},
+{edition:'2014',name:'Heat Metal',base:2,upcast:true,formula:l=>[2+(l-2),8,0],save:'60-ft range; manufactured metal object heats. Deals fire on cast, repeat with bonus action while concentrating. Holding creature may save Con to avoid dropping.',type:'fire'},
+{edition:'2014',name:"Bless",base:1,upcast:true,special:"Concentration 1 minute. 3 creatures add 1d4 to attacks and saving throws.",specialAtLevel:l=>'Concentration 1 minute: '+(l+2)+' creatures add 1d4 to attack rolls and saving throws.'},
+{edition:'2014',name:"Bane",base:1,upcast:true,special:"Charisma save; 3 creatures subtract 1d4 from attacks and saving throws. Concentration 1 minute.",specialAtLevel:l=>'Charisma save: '+(l+2)+' creatures subtract 1d4 from attack rolls and saving throws. Concentration 1 minute.'},
+{edition:'2014',name:"Hold Person",base:2,upcast:true,special:"Wisdom save or paralyzed, end-turn saves, concentration 1 minute. Humanoids only.",specialAtLevel:l=>'Wisdom save or paralyzed; end-turn saves, concentration 1 minute. '+(l-1)+' humanoid target(s), within 30 ft. of each other.'},
+{edition:'2014',name:"Fog Cloud",base:1,upcast:true,special:"Heavily obscured 20-ft-radius fog sphere. Concentration up to 1 hour.",specialAtLevel:l=>'Heavily obscured '+(20*l)+'-ft-radius sphere. Concentration up to 1 hour.'},
+{edition:'2014',name:"Invisibility",base:2,upcast:true,special:"Touch; invisible until attack/spellcast or concentration ends (1 hour).",specialAtLevel:l=>'Touch '+(l-1)+' creature(s); invisible until attack/spellcast or concentration ends (1 hour).'},
+{edition:'2014',name:"Fly",base:3,upcast:true,special:"Touch; flying speed 60 ft. Concentration 10 minutes.",specialAtLevel:l=>'Touch '+(l-2)+' creature(s), flying speed 60 ft.; concentration 10 minutes.'},
+{edition:'2014',name:"Counterspell",base:3,upcast:true,special:"Reaction 60 ft.; automatically stop spell level 3 or lower; higher requires a spellcasting ability check.",specialAtLevel:l=>'Reaction 60 ft.; automatically counter spell level '+l+' or lower; higher requires spellcasting check DC 10 + spell level.'},
+{edition:'2014',name:"Dispel Magic",base:3,upcast:true,special:"Range 120 ft.; automatically dispel spells of level 3 or lower on target; higher requires a spellcasting ability check.",specialAtLevel:l=>'120-ft range; dispel spells of level '+l+' or lower on target. Higher requires spellcasting check DC 10 + spell level.'},
+{edition:'2014',name:"Darkness",base:2,upcast:false,special:"Magical darkness in 15-ft-radius sphere; concentration 10 minutes. Darkvision cannot see through; nonmagical light cannot illuminate."},
+{edition:'2014',name:"Faerie Fire",base:1,upcast:false,special:"20-ft cube; Dexterity save or outlined, granting advantage to visible attacks; invisibility negated while outlined. Concentration 1 minute."},
+{edition:'2014',name:"Grease",base:1,upcast:false,special:"10-ft square within 60 ft.; difficult terrain 1 minute; Dexterity save or prone when cast, enters, or ends turn there."},
+{edition:'2014',name:"Haste",base:3,upcast:false,special:"Concentration 1 minute; double speed, +2 AC, advantage on Dexterity saves, one restricted extra action. On ending, target loses movement and actions for a turn."},
+{edition:'2014',name:"Mage Armor",base:1,upcast:false,special:"Unarmored creature gains base AC 13 + Dex modifier for 8 hours; ends if armor donned."},
+{edition:'2014',name:"Misty Step",base:2,upcast:false,special:"Bonus action; teleport 30 ft. to an unoccupied visible space."},
+{edition:'2014',name:"Mirror Image",base:2,upcast:false,special:"Three illusory duplicates for 1 minute; attack redirect d20 mechanic, duplicates AC 10 + Dexterity modifier. No concentration."},
+{edition:'2014',name:"Shield of Faith",base:1,upcast:false,special:"Bonus action; +2 AC to one creature within 60 ft.; concentration up to 10 minutes."},
+{edition:'2014',name:"Web",base:2,upcast:false,special:"20-ft cube. Difficult terrain and lightly obscured; Dexterity save or restrained upon entry/turn start. Concentration 1 hour; fire ignites webs."},
+{edition:'2014',name:"Protection from Evil and Good",base:1,upcast:false,special:"Touch, concentration 10 minutes. Aberrations, celestials, elementals, fey, fiends, and undead have disadvantage attacking target; charm/frighten/possess protections."},
 {edition:'2024',name:'Fireball',base:3,upcast:true,formula:l=>[8+(l-3),6,0],save:'Dexterity saving throw; half damage on success',type:'fire'}
 ];
 const rules=[
@@ -447,8 +474,15 @@ function opt(sel,values){sel.replaceChildren();for(const [value,label] of values
 function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.value),crs=[...new Set(list.map(m=>m.cr))].sort((a,b)=>crNumber(a)-crNumber(b));opt($('cr'),crs.length?crs.map(x=>[x,x]):[['','No verified cards for this edition']]);updateMonsterList()}
 function crNumber(cr){const [num,den]=String(cr).split('/').map(Number);return den?num/den:num}
 function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value).sort((a,b)=>a.name.localeCompare(b.name));opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
-function updateSpells(){const list=spells.filter(s=>s.edition===edition.value);opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
-function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';$('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
+function updateSpells(){const list=spells.filter(s=>s.edition===edition.value).sort((a,b)=>a.name.localeCompare(b.name));opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
+function updateSpellDetails(){
+ const key=$('spell').value,s=key===''?null:spells[Number(key)];
+ $('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';
+ $('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);
+ if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}
+ opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));
+ $('spellInfo').textContent=s.specialAtLevel?s.specialAtLevel(s.base):s.special||(s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||''));
+}
 
 // Original inline SVG silhouettes: fast, offline-safe, and decorative.
 function makeMonsterSilhouette(name){
@@ -543,21 +577,24 @@ function render(){
 }
 function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
 $('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);
-$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('cast').onclick=()=>safe(()=>{
+$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('slot').onchange=()=>{const key=$('spell').value,s=key===''?null:spells[Number(key)];if(s?.specialAtLevel)$('spellInfo').textContent=s.specialAtLevel(Number($('slot').value))};$('cast').onclick=()=>safe(()=>{
  const v=$('spell').value,s=v===''?null:spells[Number(v)];
  if(!s||s.edition!==edition.value){display('No verified spell selected');return}
  const level=s.upcast?Number($('slot').value):s.base;
  if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid cast level');
  let message,total='—',type='No damage roll';
  if(!s.formula){
-  message=s.name+': '+s.special+'\nDM adjudicates effect.';
-  type='Non-damaging spell';
+  message=s.name+' · Level '+level+': '+(s.specialAtLevel?s.specialAtLevel(level):s.special)+'\nDM adjudicates effect.';
+  type='Effect / no damage roll';
  }else if(s.name==='Magic Missile'){
   const darts=3+level-1,results=Array.from({length:darts},()=>roll(1,4,1));
   total=String(results.reduce((sum,r)=>sum+r.total,0));type='force · sum of all darts';
   message='Magic Missile level '+level+'\nTOTAL: '+total+' force (all '+darts+' darts)\n'
    +results.map((r,i)=>'Dart '+(i+1)+': '+r.dice[0]+' + 1 = '+r.total).join(' | ')
    +'\nDM assigns darts to targets; do not apply the sum to one target unless all darts hit it.';
+ }else if(s.triggered){
+  message=s.name+' level '+level+'\nEffect created; damage occurs when a creature enters the area or starts its turn there.\nDamage dice at trigger: '+s.formula(level)[0]+'d'+s.formula(level)[1]+' '+s.type+'.\n'+s.save;
+  type='Ongoing area · roll dice when triggered';
  }else{
   const damage=roll(...s.formula(level));total=String(damage.total);type=s.type+' damage';
   message=s.name+' level '+level+'\nTOTAL DAMAGE: '+total+' '+s.type
