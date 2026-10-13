@@ -45,6 +45,7 @@
 #spellCard .card-actions button.primary{grid-column:auto}
 @media(max-width:550px){.card-gallery{grid-template-columns:minmax(0,1fr)}.flip-card,.flip-inner{min-height:530px}}
 
+.monster-silhouette{width:100%;height:100%;max-width:210px;filter:drop-shadow(0 8px 7px #0009)}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -128,6 +129,29 @@ function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.valu
 function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value);opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
 function updateSpells(){const list=spells.filter(s=>s.edition===edition.value);opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
 function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellCard').classList.remove('flipped');$('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));$('spellInfo').textContent=s.special||s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||'')}
+
+// Original inline SVG silhouettes: fast, offline-safe, and decorative.
+function makeMonsterSilhouette(name){
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.setAttribute('viewBox','0 0 180 120');
+ svg.setAttribute('aria-hidden','true');
+ svg.setAttribute('focusable','false');
+ svg.classList.add('monster-silhouette');
+ const lower=String(name).toLowerCase();
+ const paths={
+  wolf:'M17 92 L34 68 39 42 58 57 76 45 105 50 125 63 153 62 166 48 165 75 149 85 135 82 127 110 113 110 109 85 76 85 68 110 54 110 53 85 38 88 29 101 Z',
+  skeleton:'M90 9 C110 9 122 22 119 41 L108 55 108 66 121 75 115 80 105 77 102 104 91 104 86 77 72 105 60 105 77 72 74 56 62 48 60 29 C61 17 72 9 90 9 Z M70 85 L48 113 39 111 66 71 Z M113 82 L142 109 133 113 104 91 Z',
+  zombie:'M78 11 Q110 2 119 30 L114 54 127 75 147 81 143 93 115 87 107 111 93 111 92 85 81 83 67 112 54 112 64 72 43 90 33 83 64 49 59 29 Z',
+  ogre:'M57 21 L44 3 72 17 Q92 7 111 19 L135 4 127 31 136 48 127 65 143 95 129 101 117 80 111 114 96 114 91 85 77 85 70 114 54 114 57 78 41 101 29 95 47 60 45 39 Z',
+  goblin:'M57 32 L17 14 43 63 53 77 42 106 58 109 76 84 95 84 120 108 136 103 121 75 143 51 165 14 120 35 Q97 8 74 24 Z',
+  orc:'M55 30 L44 12 72 23 Q96 13 116 24 L139 11 128 37 122 70 139 104 121 110 102 83 96 113 79 113 73 83 57 110 41 103 57 68 Z'
+ };
+ const key=Object.keys(paths).find(k=>lower.includes(k))||'ogre';
+ const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+ path.setAttribute('d',paths[key]);path.setAttribute('fill','#0a101b');path.setAttribute('stroke','#dfb66c');path.setAttribute('stroke-width','1.5');path.setAttribute('stroke-linejoin','round');
+ svg.append(path);
+ return svg;
+}
 function render(){
  const root=$('roster');root.replaceChildren();
  for(const m of roster){
@@ -135,7 +159,7 @@ function render(){
   const inner=document.createElement('div');inner.className='flip-inner';
   const front=document.createElement('article');front.className='card-face';
   const back=document.createElement('article');back.className='card-face card-back';
-  const art=document.createElement('div');art.className='card-art';art.setAttribute('aria-hidden','true');art.textContent=/wolf/i.test(m.name)?'🐺':/skeleton/i.test(m.name)?'☠':/zombie/i.test(m.name)?'🧟':/ogre/i.test(m.name)?'👹':'⚔';
+  const art=document.createElement('div');art.className='card-art';art.setAttribute('aria-hidden','true');art.append(makeMonsterSilhouette(m.name));
   const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
