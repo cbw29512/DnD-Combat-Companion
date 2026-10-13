@@ -226,6 +226,7 @@
       $('hb-effect').value = entry.special;
     }
     toggleKind();
+    refreshTemplates();
     $('hb-save').textContent = 'Update homebrew';
     $('hb-form').scrollTop = 0;
     note('Editing ' + entry.name + '. Save to apply changes.');
