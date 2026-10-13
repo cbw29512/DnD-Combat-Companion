@@ -55,6 +55,60 @@
 #attack-flash.flash-fumble{background:rgba(240,32,55,.55);visibility:visible;animation:attack-flash .6s ease-out forwards}
 @keyframes attack-flash{0%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){#attack-flash.flash-crit,#attack-flash.flash-fumble{animation:attack-flash .18s linear forwards}}
+
+/* Tablet combat viewport: navigation and primary controls stay on one screen. */
+*{box-sizing:border-box}
+html,body{height:100%;overscroll-behavior:none}
+body{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+header{flex:none;padding:8px 14px}
+header h1{font-size:clamp(1.05rem,2.6vw,1.5rem)}
+header p{display:none}
+main{width:100%;max-width:none;min-height:0;flex:1;display:flex;flex-direction:column;padding:7px 12px;gap:6px;overflow:hidden}
+#notice{display:none}
+main>label[for="edition"]{display:none}
+#edition{flex:none;align-self:flex-start;min-height:38px;padding:5px 8px}
+nav.tabs{flex:none;display:flex;flex-wrap:nowrap;overflow-x:auto;margin:0;gap:5px}
+nav.tabs button{white-space:nowrap;min-height:40px;padding:6px 12px}
+main>section.panel{margin:0}
+main>section.panel[id]{flex:1;min-height:0;overflow:hidden;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+main>section.panel[id].hidden{display:none}
+#monsters h2,#monsters h3,#spells h2,#rules h2,#dice h2{display:none}
+#monsters>label,#spells>label{display:none}
+#monsters .row{flex:none;margin:0;gap:6px}
+#monsters .row button{min-height:36px;padding:5px 10px}
+#cr,#monster,#spell,#slot{min-height:38px;padding:5px 8px;flex:none}
+.card-gallery{display:flex;flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;gap:10px;margin:0;scroll-snap-type:x mandatory;align-items:stretch;padding:2px 2px 5px}
+.flip-card,.flip-inner{height:100%;min-height:0}
+.flip-card{flex:0 0 clamp(215px,31vw,305px);scroll-snap-align:start}
+.card-face{padding:8px;gap:5px;overflow:hidden}
+.card-name{font-size:clamp(1rem,2.2vh,1.25rem)}
+.card-art{height:clamp(55px,15vh,120px);min-height:0}
+.card-top-tools{display:flex;justify-content:space-between;flex:none}
+.card-top-tools button{width:38px;height:35px;min-height:35px;padding:0;font-size:1.2rem;border:1px solid #b89c64}
+.card-art[role=button]{cursor:pointer}
+.card-art[role=button]:focus-visible{outline:3px solid #ffd377}
+.card-face select{min-height:36px;padding:5px}
+.result-grid{margin:3px 0;gap:6px}
+.result-num{padding:5px 3px}
+.result-num strong{font-size:clamp(1.5rem,4.5vh,2.1rem)}
+.card-actions{grid-template-columns:1fr;margin:0}
+.card-actions button.primary{grid-column:auto;min-height:46px}
+.card-back{overflow-y:auto}
+main>section.panel:not([id]){flex:none;padding:6px 10px}
+main>section.panel:not([id]) h2,main>section.panel:not([id]) #clear{display:none}
+#output{font-size:.81rem;line-height:1.2;min-height:0;max-height:48px;overflow:auto;padding:5px 8px}
+main>small{display:none}
+#spells #spellCard{flex:1;min-height:0;max-height:none;width:min(100%,370px);margin:0 auto}
+#spells #spellCard .flip-inner{min-height:0;height:100%}
+#rules #ruleText{overflow:auto;min-height:0}
+#dice .row{margin:0}
+@media(max-width:600px){header{padding:7px 10px}main{padding:5px;gap:4px}main>section.panel[id]{padding:6px}
+.card-gallery{scroll-padding-left:2px}.flip-card{flex-basis:min(88vw,340px)}
+nav.tabs button{font-size:.81rem;padding:5px 9px}
+#monsters .row button{font-size:.82rem}
+}
+@media(max-height:640px){.card-art{height:52px}.card-face{gap:3px}.card-top-tools button{height:30px;min-height:30px}
+.result-num strong{font-size:1.45rem}#output{max-height:32px}nav.tabs button{min-height:34px}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -179,7 +233,7 @@ function render(){
   const inner=document.createElement('div');inner.className='flip-inner';
   const front=document.createElement('article');front.className='card-face';
   const back=document.createElement('article');back.className='card-face card-back';
-  const art=document.createElement('div');art.className='card-art';art.setAttribute('aria-hidden','true');art.append(makeMonsterSilhouette(m.name));
+  const art=document.createElement('div');art.className='card-art';art.setAttribute('role','button');art.tabIndex=0;art.title='Tap artwork to show rules';art.setAttribute('aria-label','Show rules for '+m.name);art.append(makeMonsterSilhouette(m.name));art.onclick=()=>card.classList.add('flipped');art.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.classList.add('flipped')}};
   const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
@@ -214,18 +268,18 @@ function render(){
    display(m.name+' — '+a.name+'\n'+mode.value.toUpperCase()+' d20: '+diceText+' + '+a.toHit+' = '+total+
      (critical?'  ★ NAT 20 CRITICAL':fumble?'  ✕ NAT 1 MISS':'')+'\nDamage: '+dmg+' '+a.type+damageText);
   });
-  const detail=document.createElement('button');detail.textContent='Rules';detail.onclick=()=>card.classList.add('flipped');
-  const duplicate=document.createElement('button');duplicate.textContent='+ Copy';duplicate.onclick=()=>safe(()=>{
+  const duplicate=document.createElement('button');duplicate.textContent='+';duplicate.title='Duplicate';duplicate.setAttribute('aria-label','Duplicate '+m.name);duplicate.onclick=()=>safe(()=>{
    if(roster.length>=100)throw Error('Encounter limited to 100 monsters');
    const base=m.name.replace(/ #\\d+$/,'');
    const copy={...m,id:'m'+Date.now().toString(36)+secureDie(1000000).toString(36),name:base+' #'+(roster.filter(x=>x.name.startsWith(base+' #')).length+1)};
    roster.push(copy);selected=copy.id;save();render();
   });
-  const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{
+  const remove=document.createElement('button');remove.textContent='🗑';remove.title='Remove';remove.setAttribute('aria-label','Remove '+m.name);remove.onclick=()=>{
    roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render();
   };
-  const controls=document.createElement('div');controls.className='card-actions';controls.append(attack,detail,duplicate,remove);
-  front.append(art,name,stats,select,mode,result,controls);
+  const tools=document.createElement('div');tools.className='card-top-tools';tools.append(duplicate,remove);
+  const controls=document.createElement('div');controls.className='card-actions';controls.append(attack);
+  front.append(tools,art,name,stats,select,mode,result,controls);
   const heading=document.createElement('h3');heading.className='card-name';heading.textContent=m.name+' — Rules';
   const rules=document.createElement('div');rules.className='card-meta';
   rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+'+'+a.dice[2]+' '+a.type).join('\\n');
