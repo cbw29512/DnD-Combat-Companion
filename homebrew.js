@@ -42,11 +42,20 @@
         type: text(a.type, 40) || 'untyped', onHit: text(a.onHit, 400)
       };
     });
+    const multiattacks = (raw.multiattacks || []).map((routine, ri) => {
+      const title = text(routine.name, 80);
+      if (!title) throw Error('Multiattack '+(ri+1)+' needs a name.');
+      if (!Array.isArray(routine.sequence) || routine.sequence.length < 2 || routine.sequence.length > 4)
+        throw Error('Multiattack '+(ri+1)+' requires 2–4 attacks.');
+      const sequence = routine.sequence.map(i => integer(i, 0, actions.length - 1, 'Multiattack attack index'));
+      return {name:title, sequence};
+    });
+    if (multiattacks.length > 6) throw Error('Maximum six multiattack routines per monster.');
     return {
       homebrewId: text(raw.homebrewId, 70) || crypto.randomUUID(),
       edition: editionValue(raw.edition), name,
       cr, hp: integer(raw.hp, 1, 99999, 'HP'), ac: integer(raw.ac, 0, 99, 'AC'),
-      traits: text(raw.traits, 2500), actions
+      traits: text(raw.traits, 2500), actions, multiattacks
     };
   }
   function validateSpell(raw) {
@@ -134,8 +143,44 @@
     row.querySelector('.hb-remove-attack').onclick = () => {
       if ($('hb-attacks').children.length < 2) return note('A monster needs at least one attack.', true);
       row.remove();
+      refreshRoutineOptions();
     };
     $('hb-attacks').append(row);
+    refreshRoutineOptions();
+  }
+
+  // Each multiattack step refers to an attack index, not a creature or ability name.
+  function refreshRoutineOptions() {
+    const attacks=[...$('hb-attacks').children].map((row,i)=>({
+      id:String(i),name:row.querySelector('[data-field="name"]').value.trim()||'Attack '+(i+1)
+    }));
+    for(const row of $('hb-routines').children) {
+      for(const select of row.querySelectorAll('select[data-strike]')){
+        const old=select.value;
+        select.replaceChildren();
+        const blank=document.createElement('option');blank.value='';blank.textContent='— None —';select.append(blank);
+        for(const attack of attacks){
+          const opt=document.createElement('option');opt.value=attack.id;opt.textContent='#'+(Number(attack.id)+1)+' '+attack.name;select.append(opt);
+        }
+        select.value=old;
+      }
+    }
+  }
+  function routineRow(value={}) {
+    const row=document.createElement('div');row.className='hb-routine';
+    row.innerHTML='<label class="hb-wide">Routine name<input data-routine-name maxlength="80" placeholder="Multiattack · Bite + Claws"></label>'+
+      '<div class="hb-routine-picks"></div><button class="hb-remove-routine" type="button">− Remove routine</button>';
+    row.querySelector('[data-routine-name]').value=value.name||'Multiattack';
+    const picks=row.querySelector('.hb-routine-picks');
+    for(let i=0;i<4;i++){
+      const label=document.createElement('label');label.textContent='Strike '+(i+1);
+      const select=document.createElement('select');select.setAttribute('data-strike',String(i));select.setAttribute('aria-label','Multiattack strike '+(i+1));
+      label.append(select);picks.append(label);
+    }
+    row.querySelector('.hb-remove-routine').onclick=()=>row.remove();
+    $('hb-routines').append(row);
+    refreshRoutineOptions();
+    row.querySelectorAll('select[data-strike]').forEach((s,i)=>{s.value=value.sequence?.[i]===undefined?'':String(value.sequence[i])});
   }
   function resetEditor() {
     editing = null;
@@ -143,6 +188,7 @@
     $('hb-edition').value = edition.value;
     $('hb-kind').value = 'monster';
     $('hb-attacks').replaceChildren();
+    $('hb-routines').replaceChildren();
     attackRow();
     toggleKind();
     $('hb-save').textContent = 'Save homebrew';
@@ -172,7 +218,11 @@
           return { name: value('name'), toHit: value('toHit'),
             dice: [value('count'), value('sides'), value('bonus')],
             type: value('type'), onHit: value('onHit') };
-        })
+        }),
+        multiattacks: [...$('hb-routines').children].map(row => ({
+          name: row.querySelector('[data-routine-name]').value,
+          sequence:[...row.querySelectorAll('select[data-strike]')].map(s=>s.value).filter(x=>x!=='').map(Number)
+        }))
       });
     }
     return validateSpell({
@@ -216,6 +266,7 @@
       $('hb-cr').value = entry.cr; $('hb-hp').value = entry.hp; $('hb-ac').value = entry.ac;
       $('hb-traits').value = entry.traits;
       $('hb-attacks').replaceChildren(); entry.actions.forEach(attackRow);
+      $('hb-routines').replaceChildren(); (entry.multiattacks||[]).forEach(routineRow);
     } else {
       $('hb-level').value = entry.base; $('hb-upcast').checked = entry.upcast;
       $('hb-damage-enabled').checked = entry.hasDamage;
@@ -268,6 +319,7 @@
     $('hb-traits').value = source.traits || '';
     $('hb-attacks').replaceChildren();
     source.actions.forEach(a => attackRow(a));
+    $('hb-routines').replaceChildren(); (source.multiattacks||[]).forEach(routineRow);
     refreshTemplates();
     note('Loaded a working copy of ' + source.name + '. The original stat block is unchanged. Edit and save your version.');
   }
@@ -362,6 +414,11 @@
     if ($('hb-attacks').children.length >= 12) return note('Limit of 12 attack profiles.', true);
     attackRow();
   };
+  $('hb-add-routine').onclick=()=>{
+    if($('hb-routines').children.length>=6)return note('Maximum six multiattack routines.',true);
+    routineRow();
+  };
+  $('hb-attacks').addEventListener('input',e=>{if(e.target.matches('[data-field="name"]'))refreshRoutineOptions()});
   $('hb-new').onclick = resetEditor;
   $('hb-search').addEventListener('input', drawList);
   $('hb-edition').addEventListener('change', refreshTemplates);
