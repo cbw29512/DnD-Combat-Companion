@@ -345,6 +345,27 @@ main{gap:5px;padding:6px 10px}
 #spells #spellCard.has-trigger .spell-front .card-actions #rollSpellTick{grid-column:2;min-height:48px;font-size:.98rem;min-width:0;padding:5px}
 #spells #spellCard.has-trigger .spell-front .card-actions #flipSpell{grid-column:3;font-size:.84rem;padding:5px}
 @media(max-width:470px){#spells #spellCard.has-trigger .spell-front .card-actions{gap:3px}#spells #spellCard.has-trigger .spell-front .card-actions #cast,#spells #spellCard.has-trigger .spell-front .card-actions #rollSpellTick{font-size:.83rem}}
+
+/* No extra front-card rows: editable HP, conditions and limited resources live on the back. */
+#monsters .monster-front .card-meta{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.monster-front .card-meta.monster-at-zero{color:#ff9a9a;font-weight:800}
+#monsters .card-back{display:flex;flex-direction:column;gap:7px;overflow-y:auto;padding:9px}
+#monsters .card-back .card-name{font-size:1.13rem;line-height:1.1;flex:none}
+.monster-state-tools{display:block;padding:7px;border:1px solid #5f7390;border-radius:8px;background:#14243a;flex:none}
+.monster-state-tools>strong{display:block;color:#ffdd9b;margin-bottom:5px;font-size:.97rem}
+.monster-hp-buttons{display:grid;grid-template-columns:60px repeat(3,minmax(0,1fr));gap:4px}
+.monster-hp-buttons input{min-width:0;width:100%;height:41px;padding:4px;text-align:center}
+.monster-hp-buttons button{min-height:41px;padding:3px;font-size:.85rem}
+.monster-state-tools>select{width:60%;min-height:40px;padding:4px;font-size:.91rem}
+.monster-state-tools>button{min-height:40px;margin-left:4px;padding:4px;font-size:.9rem}
+.monster-condition-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;font-size:.9rem}
+.monster-condition-list button{min-height:36px;padding:3px 6px;font-size:.86rem;background:#5c3545;color:#fff2f2}
+.monster-resource-row{display:grid;grid-template-columns:minmax(0,1fr) 38px 38px;align-items:center;gap:4px;margin-top:3px}
+.monster-resource-row span{font-size:.92rem}.monster-resource-row button{min-height:38px;padding:2px}
+.monster-rules-details{padding:7px;border:1px solid #52647a;border-radius:7px;flex:none}
+.monster-rules-details summary{cursor:pointer;font-weight:700;color:#f4d29a}
+.monster-rules-details .card-meta{font-size:.85rem;line-height:1.4;white-space:pre-line;overflow-wrap:anywhere}
+#monsters .card-back>button{margin-top:0;flex:none;font-size:.95rem}
 </style><link rel="stylesheet" href="./homebrew.css?v=3"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
 <div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button><button data-tab="homebrew" aria-pressed="false">Homebrew</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
@@ -578,6 +599,59 @@ const rules=[
 ];
 let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if(Array.isArray(d))roster=d.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string'&&typeof x.edition==='string'&&Array.isArray(x.actions)).slice(0,100)}catch(e){console.warn('Roster recovery failed',e)}
 let selected=null;
+
+const CONDITIONS=['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
+function makeMonsterInstance(template,id,label){
+ const maxHp=Number.isInteger(template.maxHp)?template.maxHp:template.hp;
+ return {...template,id,name:label,maxHp,currentHp:maxHp,conditions:[],
+  resourceState:(template.resources||[]).map(r=>({name:r.name,max:r.max,remaining:r.max}))};
+}
+function normalizeMonsterInstance(m){
+ const maxHp=Number.isInteger(m.maxHp)&&m.maxHp>0?m.maxHp:m.hp;
+ m.maxHp=Math.min(99999,Math.max(1,maxHp));
+ m.currentHp=Number.isInteger(m.currentHp)?Math.min(m.maxHp,Math.max(0,m.currentHp)):m.maxHp;
+ m.conditions=Array.isArray(m.conditions)?[...new Set(m.conditions.filter(x=>CONDITIONS.includes(x)))]:[];
+ const stored=Array.isArray(m.resourceState)?m.resourceState:[];
+ m.resourceState=(m.resources||[]).filter(r=>r&&typeof r.name==='string'&&Number.isInteger(r.max)&&r.max>0&&r.max<=1000)
+  .map(r=>{const old=stored.find(x=>x.name===r.name);return {name:r.name,max:r.max,remaining:Number.isInteger(old?.remaining)?Math.max(0,Math.min(r.max,old.remaining)):r.max}});
+ return m;
+}
+function adjustMonsterHp(m,delta){
+ if(!Number.isInteger(delta)||Math.abs(delta)>99999)throw Error('Invalid HP change.');
+ m.currentHp=Math.max(0,Math.min(m.maxHp,m.currentHp+delta));
+ save();return m.currentHp;
+}
+function toggleMonsterCondition(m,value){
+ if(!CONDITIONS.includes(value))throw Error('Select a valid condition.');
+ if(m.conditions.includes(value))m.conditions=m.conditions.filter(x=>x!==value);else m.conditions.push(value);
+ save();return m.conditions;
+}
+function monsterAttackCosts(m,choice){
+ const match=/^([ar]):(\d+)$/.exec(String(choice));
+ if(!match)throw Error('Select an attack.');
+ const routine=match[1]==='r'?(m.multiattacks||[])[Number(match[2])]:null;
+ if(match[1]==='r'&&!routine)throw Error('Unavailable multiattack routine.');
+ const seq=routine?routine.sequence:[Number(match[2])];
+ if(!Array.isArray(seq)||!seq.length||seq.length>8)throw Error('Unsupported multiattack.');
+ const totals=new Map();
+ for(const index of seq){
+  const a=m.actions[index];if(!a)throw Error('Unavailable attack profile.');
+  for(const cost of a.costs||[]){
+   if(!Number.isInteger(cost.amount)||cost.amount<1)throw Error('Invalid action resource cost.');
+   totals.set(cost.name,(totals.get(cost.name)||0)+cost.amount);
+  }
+ }
+ for(const [name,amount] of totals){
+  const r=m.resourceState.find(x=>x.name===name);
+  if(!r||r.remaining<amount)throw Error('Insufficient '+name+' (need '+amount+'). Recharge or choose another attack.');
+ }
+ return totals;
+}
+function spendMonsterAttackCosts(m,costs){
+ for(const [name,amount] of costs){m.resourceState.find(x=>x.name===name).remaining-=amount}
+ if(costs.size)save();
+}
+roster.forEach(normalizeMonsterInstance);
 function secureDie(sides){if(!Number.isInteger(sides)||sides<2||sides>1000000)throw Error('Invalid dice sides');if(!globalThis.crypto?.getRandomValues||!isSecureContext)throw Error('Secure Web Crypto unavailable: open through HTTPS.');const bound=4294967296-Math.floor(4294967296/sides)%sides,buf=new Uint32Array(1);for(let i=0;i<100;i++){crypto.getRandomValues(buf);if(buf[0]<bound)return buf[0]%sides+1}throw Error('Secure randomness retry exhausted')}
 function roll(n,s,b=0){if(!Number.isInteger(n)||n<1||n>100||!Number.isInteger(b)||Math.abs(b)>1000)throw Error('Unsafe dice formula');const dice=Array.from({length:n},()=>secureDie(s));return{dice,total:dice.reduce((a,v)=>a+v,b),bonus:b}}
 function flashAttackResult(critical,fumble){
@@ -682,7 +756,14 @@ function render(){
   const back=document.createElement('article');back.className='card-face card-back';
   const art=document.createElement('div');art.className='card-art';art.setAttribute('role','button');art.tabIndex=0;art.title='Tap artwork to show rules';art.setAttribute('aria-label','Show rules for '+m.name);art.append(makeMonsterSilhouette(m.name));art.onclick=()=>card.classList.add('flipped');art.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.classList.add('flipped')}};
   const name=document.createElement('h3');name.className='card-name';name.textContent=m.name.replace(/ #\d+$/,'');name.title=m.name;
-  const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
+  const stats=document.createElement('div');stats.className='card-meta';
+  const refreshStats=()=>{
+   stats.textContent='AC '+m.ac+'  •  HP '+m.currentHp+'/'+m.maxHp+'  •  CR '+m.cr+
+     (m.conditions.length?'  •  '+m.conditions.join(', '):'');
+   stats.title=m.conditions.length?'Conditions: '+m.conditions.join(', '):'No active conditions';
+   stats.classList.toggle('monster-at-zero',m.currentHp===0);
+  };
+  refreshStats();
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
   opt(select,[...(m.multiattacks||[]).map((a,i)=>['r:'+i,a.name]),...(m.actions||[]).map((a,i)=>['a:'+i,a.name])]);
   let attackMode='normal';
@@ -692,7 +773,10 @@ function render(){
   result.append(hit,damage);
   const attack=document.createElement('button');attack.className='primary';attack.textContent='⚔ ATTACK';
   const perform=()=>{
+   const costs=monsterAttackCosts(m,select.value);
    const rolled=resolveMonsterChoice(m,select.value,attackMode);
+   spendMonsterAttackCosts(m,costs);
+   refreshResources();
    const strikes=rolled.strikes,critical=strikes.some(x=>x.critical),miss=strikes.some(x=>x.miss);
    flashAttackResult(critical,!critical&&miss);
    hit.querySelector('small').textContent=strikes.length>1?'TO HIT · '+strikes.length+' ROLLS':critical?'NAT 20 · CRITICAL':miss?'NAT 1 · MISS':'TO HIT';
@@ -723,7 +807,7 @@ function render(){
   const duplicate=document.createElement('button');duplicate.textContent='+';duplicate.title='Duplicate';duplicate.setAttribute('aria-label','Duplicate '+m.name);duplicate.onclick=()=>safe(()=>{
    if(roster.length>=100)throw Error('Encounter limited to 100 monsters');
    const base=m.name.replace(/ #\\d+$/,'');
-   const copy={...m,id:'m'+Date.now().toString(36)+secureDie(1000000).toString(36),name:base+' #'+(roster.filter(x=>x.name.startsWith(base+' #')).length+1)};
+   const copy=makeMonsterInstance(m,'m'+Date.now().toString(36)+secureDie(1000000).toString(36),base+' #'+(roster.filter(x=>x.name.startsWith(base+' #')).length+1));
    roster.push(copy);selected=copy.id;save();render();
   });
   const remove=document.createElement('button');remove.textContent='🗑';remove.title='Remove';remove.setAttribute('aria-label','Remove '+m.name);remove.onclick=()=>{
@@ -743,11 +827,66 @@ function render(){
   rules.textContent=(m.multiattacks||[]).map(r=>r.name+': '+r.sequence.map(i=>m.actions[i]?.name||'Missing attack').join(' + ')).join('\n')+'\n'+(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+(a.dice[2]>=0?'+':'')+a.dice[2]+' '+a.type+(a.onHit?'\n  On hit: '+a.onHit:'')).join('\n')+(m.traits?'\n\nTRAITS (DM resolves):\n'+m.traits:'');
   rules.style.whiteSpace='pre-line';
   const flipBack=document.createElement('button');flipBack.textContent='Back to card';flipBack.onclick=()=>card.classList.remove('flipped');
-  back.append(heading,rules,flipBack);
+  const hpTools=document.createElement('div');hpTools.className='monster-state-tools';
+  const hpTitle=document.createElement('strong');hpTitle.textContent='Current HP: '+m.currentHp+' / '+m.maxHp;
+  const hpAmount=document.createElement('input');hpAmount.type='number';hpAmount.min='1';hpAmount.max='99999';hpAmount.value='1';
+  hpAmount.setAttribute('aria-label','HP change for '+m.name);
+  const damageBtn=document.createElement('button');damageBtn.textContent='− Damage';
+  const healBtn=document.createElement('button');healBtn.textContent='+ Heal';
+  const resetBtn=document.createElement('button');resetBtn.textContent='Reset HP';
+  const hpChange=delta=>safe(()=>{
+   const amount=Number(hpAmount.value);
+   if(!Number.isInteger(amount)||amount<1||amount>99999)throw Error('Enter HP amount 1 to 99999.');
+   adjustMonsterHp(m,delta*amount);hpTitle.textContent='Current HP: '+m.currentHp+' / '+m.maxHp;refreshStats();
+  });
+  damageBtn.onclick=()=>hpChange(-1);healBtn.onclick=()=>hpChange(1);
+  resetBtn.onclick=()=>{adjustMonsterHp(m,m.maxHp-m.currentHp);hpTitle.textContent='Current HP: '+m.currentHp+' / '+m.maxHp;refreshStats()};
+  const hpButtons=document.createElement('div');hpButtons.className='monster-hp-buttons';hpButtons.append(hpAmount,damageBtn,healBtn,resetBtn);
+  hpTools.append(hpTitle,hpButtons);
+  const conditionTools=document.createElement('div');conditionTools.className='monster-state-tools';
+  const conditionTitle=document.createElement('strong');conditionTitle.textContent='Conditions (DM managed)';
+  const conditionChooser=document.createElement('select');
+  conditionChooser.setAttribute('aria-label','Condition to add or remove');
+  opt(conditionChooser,CONDITIONS.map(value=>[value,value]));
+  const addCondition=document.createElement('button');addCondition.textContent='+ Condition';
+  const conditionList=document.createElement('div');conditionList.className='monster-condition-list';
+  const refreshConditions=()=>{
+   conditionList.replaceChildren();
+   if(!m.conditions.length){conditionList.textContent='None';return}
+   for(const value of m.conditions){
+    const b=document.createElement('button');b.textContent=value+' ×';b.title='Remove '+value;
+    b.onclick=()=>{toggleMonsterCondition(m,value);refreshStats();refreshConditions()};conditionList.append(b);
+   }
+  };
+  addCondition.onclick=()=>{toggleMonsterCondition(m,conditionChooser.value);refreshConditions();refreshStats()};
+  conditionTools.append(conditionTitle,conditionChooser,addCondition,conditionList);refreshConditions();
+  const resourceTools=document.createElement('div');resourceTools.className='monster-state-tools';
+  const resourceTitle=document.createElement('strong');resourceTitle.textContent='Limited uses (DM managed)';
+  const resourceList=document.createElement('div');resourceList.className='monster-resource-list';
+  const refreshResources=()=>{
+   resourceList.replaceChildren();
+   if(!m.resourceState.length){resourceTools.hidden=true;return}
+   resourceTools.hidden=false;
+   for(const item of m.resourceState){
+    const row=document.createElement('div');row.className='monster-resource-row';
+    const title=document.createElement('span');title.textContent=item.name+': '+item.remaining+'/'+item.max;
+    const down=document.createElement('button');down.textContent='−';down.setAttribute('aria-label','Spend '+item.name);
+    const up=document.createElement('button');up.textContent='+';up.setAttribute('aria-label','Restore '+item.name);
+    down.disabled=item.remaining===0;up.disabled=item.remaining>=item.max;
+    down.onclick=()=>{item.remaining=Math.max(0,item.remaining-1);save();refreshResources()};
+    up.onclick=()=>{item.remaining=Math.min(item.max,item.remaining+1);save();refreshResources()};
+    row.append(title,down,up);resourceList.append(row);
+   }
+  };
+  resourceTools.append(resourceTitle,resourceList);refreshResources();
+  const ruleDetails=document.createElement('details');ruleDetails.className='monster-rules-details';
+  const summary=document.createElement('summary');summary.textContent='Printed attacks and traits';
+  ruleDetails.append(summary,rules);
+  back.append(heading,hpTools,conditionTools,resourceTools,ruleDetails,flipBack);
   inner.append(front,back);card.append(inner);root.append(card);
  }
 }
-function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
+function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m=makeMonsterInstance(source,id,source.name+' #'+count);if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
 $('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);
 $('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('slot').onchange=()=>{const key=$('spell').value,s=key===''?null:spells[Number(key)];if(s?.specialAtLevel)$('spellInfo').textContent=s.specialAtLevel(Number($('slot').value))};$('cast').onclick=()=>safe(()=>{
  const v=$('spell').value,s=v===''?null:spells[Number(v)];
