@@ -330,6 +330,14 @@ main{gap:5px;padding:6px 10px}
 @media(max-width:780px){.app-header{overflow-x:auto;scrollbar-width:thin}
 .app-header .combat-toolbar{flex:none}.app-header .combat-toolbar nav.tabs{flex:none;overflow:visible}
 .app-header .monster-picker{flex:none;grid-template-columns:65px 135px 60px}}
+
+/* Individual multiattack results fit inside the previously decorative art area. */
+.monster-front .result-num.routine strong{font-size:clamp(1.15rem,2.7vh,1.6rem);line-height:1.15;overflow-wrap:anywhere}
+.monster-front .card-art:has(.routine-breakdown){background:#111f30;padding:5px 7px;display:flex;align-items:stretch;justify-content:center;overflow:auto}
+.routine-breakdown{width:100%;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.routine-strike{display:flex;justify-content:space-between;gap:6px;border-bottom:1px solid #526178;padding:2px 0;font-size:clamp(.76rem,1.3vw,.92rem);line-height:1.1}
+.routine-strike span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.routine-strike strong{flex:none;color:#ffe0a3;white-space:nowrap}
 </style><link rel="stylesheet" href="./homebrew.css?v=2"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
 <div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button><button data-tab="homebrew" aria-pressed="false">Homebrew</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
@@ -610,6 +618,45 @@ function makeMonsterSilhouette(name){
  svg.append(path);
  return svg;
 }
+
+function resolveStrike(action,edition,mode){
+ if(!action||!Array.isArray(action.dice)||action.dice.length!==3)throw Error('Invalid attack data.');
+ if(!['normal','advantage','disadvantage'].includes(mode))throw Error('Invalid attack mode.');
+ const d1=secureDie(20),d2=mode==='normal'?null:secureDie(20);
+ const natural=d2===null?d1:(mode==='advantage'?Math.max(d1,d2):Math.min(d1,d2));
+ const critical=natural===20,miss=natural===1;
+ const damageRoll=miss?null:roll(...action.dice);
+ const extra=critical&&['2014','2024'].includes(edition)?roll(action.dice[0],action.dice[1],0):null;
+ return {action,natural,total:natural+action.toHit,critical,miss,damage:damageRoll?damageRoll.total+(extra?.total||0):null,
+  dice:d2===null?String(d1):d1+' / '+d2+' → '+natural,
+  damageDice:damageRoll?'['+damageRoll.dice.join(', ')+'] + '+damageRoll.bonus+(extra?' + crit ['+extra.dice.join(', ')+']':''):'automatic miss'};
+}
+function resolveMonsterChoice(monster,value,mode){
+ const parsed=/^([ar]):(\d+)$/.exec(String(value));
+ if(!parsed)throw Error('Select an available attack.');
+ const pos=Number(parsed[2]);
+ const routine=parsed[1]==='r'?(monster.multiattacks||[])[pos]:null;
+ const sequence=routine?routine.sequence:[pos];
+ if(!Array.isArray(sequence)||!sequence.length||sequence.length>8)throw Error('Invalid multiattack routine.');
+ const strikes=sequence.map(index=>{
+  if(!Number.isInteger(index)||index<0||index>=monster.actions.length)throw Error('Missing multiattack action.');
+  return resolveStrike(monster.actions[index],monster.edition,mode);
+ });
+ return {name:routine?.name||strikes[0].action.name,strikes,mode,routine:!!routine};
+}
+function describeMonsterChoice(monster,result){
+ const lines=[monster.name+' — '+result.name+' · '+result.mode.toUpperCase()];
+ for(const [i,x] of result.strikes.entries()){
+  lines.push((result.strikes.length>1?(i+1)+'. ':'')+x.action.name+
+   ' · d20 '+x.dice+' + '+x.action.toHit+' = '+x.total+
+   (x.critical?' ★ NAT 20':x.miss?' ✕ NAT 1':''));
+  lines.push('  '+(x.miss?'Automatic miss — no damage.':'Potential damage '+x.damage+' '+x.action.type+' · '+x.damageDice));
+  if(x.action.onHit)lines.push('  On hit (DM resolves): '+x.action.onHit);
+ }
+ if(result.routine)lines.push('Combined POTENTIAL damage if non-fumble attacks hit: '+result.strikes.reduce((s,x)=>s+(x.damage||0),0)+'. DM decides hits and damage applied.');
+ if(monster.traits)lines.push('Traits (DM resolves): '+monster.traits);
+ return lines.join('\n');
+}
 function render(){
  const root=$('roster');root.replaceChildren();
  for(const m of roster){
@@ -621,37 +668,42 @@ function render(){
   const name=document.createElement('h3');name.className='card-name';name.textContent=m.name.replace(/ #\d+$/,'');name.title=m.name;
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
-  opt(select,(m.actions||[]).map((a,i)=>[String(i),a.name]));
+  opt(select,[...(m.multiattacks||[]).map((a,i)=>['r:'+i,a.name]),...(m.actions||[]).map((a,i)=>['a:'+i,a.name]]);
   let attackMode='normal';
   const result=document.createElement('div');result.className='result-grid';
   const hit=document.createElement('div');hit.className='result-num';hit.innerHTML='<small>TO HIT</small><strong>—</strong>';
   const damage=document.createElement('div');damage.className='result-num';damage.innerHTML='<small>DAMAGE</small><strong>—</strong>';
   result.append(hit,damage);
   const attack=document.createElement('button');attack.className='primary';attack.textContent='⚔ ATTACK';
-  attack.onclick=()=>safe(()=>{
-   const a=m.actions[Number(select.value)];if(!a)throw Error('Choose an attack first');
-   // Attack roll mode changes only the d20 selection; damage remains a separate roll.
-   const first=secureDie(20),second=attackMode==='normal'?null:secureDie(20);
-   const natural=second===null?first:(attackMode==='advantage'?Math.max(first,second):Math.min(first,second));
-   const total=natural+a.toHit;
-   const critical=natural===20, fumble=natural===1;
-   flashAttackResult(critical,fumble);
-   // Standard 2014/2024 5e critical hits double damage dice, not flat modifiers.
-   // Other editions need their own verified critical rules and are not guessed here.
-   const d=roll(...a.dice);
-   const extra=critical&&['2014','2024'].includes(m.edition)?roll(a.dice[0],a.dice[1],0):null;
-   const dmg=d.total+(extra?.total||0);
-   const tag=critical?'NAT 20 — CRITICAL!':fumble?'NAT 1 — AUTOMATIC MISS':'TO HIT';
-   hit.querySelector('small').textContent=tag;
-   hit.querySelector('strong').textContent=total;
-   hit.classList.toggle('critical',critical);hit.classList.toggle('fumble',fumble);
-   damage.querySelector('strong').textContent=dmg;
-   damage.querySelector('small').textContent='DAMAGE · '+a.type;
-   const diceText=second===null?String(first):first+' / '+second+' → '+natural;
-   const damageText=extra?' ['+d.dice.join(',')+'] + crit ['+extra.dice.join(',')+'] + '+d.bonus:' ['+d.dice.join(',')+'] + '+d.bonus;
-   display(m.name+' — '+a.name+'\n'+attackMode.toUpperCase()+' d20: '+diceText+' + '+a.toHit+' = '+total+
-     (critical?'  ★ NAT 20 CRITICAL':fumble?'  ✕ NAT 1 MISS':'')+'\nDamage: '+dmg+' '+a.type+damageText+(a.onHit?'\nOn-hit rider (DM resolves): '+a.onHit:'')+(m.traits?'\nTraits reminder (DM resolves): '+m.traits:''));
-  });
+  const perform=()=>{
+   const rolled=resolveMonsterChoice(m,select.value,attackMode);
+   const strikes=rolled.strikes,critical=strikes.some(x=>x.critical),miss=strikes.some(x=>x.miss);
+   flashAttackResult(critical,!critical&&miss);
+   hit.querySelector('small').textContent=strikes.length>1?'TO HIT · '+strikes.length+' ROLLS':critical?'NAT 20 · CRITICAL':miss?'NAT 1 · MISS':'TO HIT';
+   hit.querySelector('strong').textContent=strikes.map(x=>x.total).join(' / ');
+   hit.classList.toggle('critical',critical);hit.classList.toggle('fumble',!critical&&miss);
+   hit.classList.toggle('routine',strikes.length>1);
+   damage.querySelector('strong').textContent=strikes.length>1?String(strikes.reduce((s,x)=>s+(x.damage||0),0)):strikes[0].miss?'—':String(strikes[0].damage);
+   damage.querySelector('small').textContent=strikes.length>1?'POTENTIAL · DM APPLIES':strikes[0].miss?'AUTOMATIC MISS':'POTENTIAL · '+strikes[0].action.type;
+   if(strikes.length>1){
+    const details=document.createElement('div');details.className='routine-breakdown';
+    for(const [i,x] of strikes.entries()){
+     const line=document.createElement('div');line.className='routine-strike';
+     const n=document.createElement('span');n.textContent=(i+1)+'. '+x.action.name;
+     const v=document.createElement('strong');v.textContent=(x.critical?'★ ':x.miss?'✕ ':'')+'Hit '+x.total+' · '+(x.miss?'MISS':'Dmg '+x.damage);
+     line.append(n,v);details.append(line);
+    }
+    art.replaceChildren(details);
+   }else art.replaceChildren(makeMonsterSilhouette(m.name));
+   display(describeMonsterChoice(m,rolled));
+  };
+  select.onchange=()=>{
+   hit.querySelector('small').textContent='TO HIT';hit.querySelector('strong').textContent='—';
+   damage.querySelector('small').textContent='DAMAGE';damage.querySelector('strong').textContent='—';
+   hit.classList.remove('critical','fumble','routine');
+   art.replaceChildren(makeMonsterSilhouette(m.name));
+  };
+  attack.onclick=()=>safe(perform);
   const duplicate=document.createElement('button');duplicate.textContent='+';duplicate.title='Duplicate';duplicate.setAttribute('aria-label','Duplicate '+m.name);duplicate.onclick=()=>safe(()=>{
    if(roster.length>=100)throw Error('Encounter limited to 100 monsters');
    const base=m.name.replace(/ #\\d+$/,'');
@@ -672,7 +724,7 @@ function render(){
   front.append(tools,art,stats,select,result,controls);
   const heading=document.createElement('h3');heading.className='card-name';heading.textContent=m.name+' — Rules';
   const rules=document.createElement('div');rules.className='card-meta';
-  rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+(a.dice[2]>=0?'+':'')+a.dice[2]+' '+a.type+(a.onHit?'\n  On hit: '+a.onHit:'')).join('\n')+(m.traits?'\n\nTRAITS (DM resolves):\n'+m.traits:'');
+  rules.textContent=(m.multiattacks||[]).map(r=>r.name+': '+r.sequence.map(i=>m.actions[i]?.name||'Missing attack').join(' + ')).join('\n')+'\n'+(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+(a.dice[2]>=0?'+':'')+a.dice[2]+' '+a.type+(a.onHit?'\n  On hit: '+a.onHit:'')).join('\n')+(m.traits?'\n\nTRAITS (DM resolves):\n'+m.traits:'');
   rules.style.whiteSpace='pre-line';
   const flipBack=document.createElement('button');flipBack.textContent='Back to card';flipBack.onclick=()=>card.classList.remove('flipped');
   back.append(heading,rules,flipBack);
