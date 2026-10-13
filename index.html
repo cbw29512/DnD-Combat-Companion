@@ -338,6 +338,13 @@ main{gap:5px;padding:6px 10px}
 .routine-strike{display:flex;justify-content:space-between;gap:6px;border-bottom:1px solid #526178;padding:2px 0;font-size:clamp(.76rem,1.3vw,.92rem);line-height:1.1}
 .routine-strike span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .routine-strike strong{flex:none;color:#ffe0a3;white-space:nowrap}
+
+/* Ongoing-area spells have both PLACE and ROLL TICK controls, without page scrolling. */
+#spells #spellCard.has-trigger .spell-front .card-actions{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) auto;gap:5px}
+#spells #spellCard.has-trigger .spell-front .card-actions #cast{font-size:1rem;min-width:0;padding:5px}
+#spells #spellCard.has-trigger .spell-front .card-actions #rollSpellTick{grid-column:2;min-height:48px;font-size:.98rem;min-width:0;padding:5px}
+#spells #spellCard.has-trigger .spell-front .card-actions #flipSpell{grid-column:3;font-size:.84rem;padding:5px}
+@media(max-width:470px){#spells #spellCard.has-trigger .spell-front .card-actions{gap:3px}#spells #spellCard.has-trigger .spell-front .card-actions #cast,#spells #spellCard.has-trigger .spell-front .card-actions #rollSpellTick{font-size:.83rem}}
 </style><link rel="stylesheet" href="./homebrew.css?v=3"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
 <div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button><button data-tab="homebrew" aria-pressed="false">Homebrew</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
@@ -349,7 +356,7 @@ main{gap:5px;padding:6px 10px}
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
 <div class="spell-picker"><label class="sr-only" for="spell">Choose spell</label><select id="spell" aria-label="Choose spell"></select><div id="upcastArea"><label class="sr-only" for="slot">Spell slot level</label><select id="slot" aria-label="Cast at level"></select></div></div>
-<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="spell-total" id="spellTotal" role="status" aria-live="polite"><span>TOTAL DAMAGE</span><strong id="spellTotalValue">—</strong><small id="spellTotalType">Cast a spell to roll</small></div><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
+<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="spell-total" id="spellTotal" role="status" aria-live="polite"><span>TOTAL DAMAGE</span><strong id="spellTotalValue">—</strong><small id="spellTotalType">Cast a spell to roll</small></div><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button class="primary hidden" id="rollSpellTick">ROLL TICK</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
 <section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><p class="muted">These are 2014 5e reference examples. Other editions require their own rules and are not yet available.</p><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
 
@@ -595,6 +602,8 @@ function updateSpellDetails(){
  const key=$('spell').value,s=key===''?null:spells[Number(key)];
  $('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';
  $('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);
+ $('rollSpellTick').classList.toggle('hidden',!s?.triggered);$('spellCard').classList.toggle('has-trigger',!!s?.triggered);
+ $('cast').textContent=s?.triggered?'✦ PLACE':'✦ CAST SPELL';$('flipSpell').textContent=s?.triggered?'RULES':'Rules / Results';
  if(!s){$('spellInfo').textContent='This edition has no verified spell cards yet.';return}
  opt($('slot'),Array.from({length:s.upcast?10-s.base:1},(_,i)=>[String(s.base+i),'Level '+(s.base+i)]));
  $('spellInfo').textContent=s.specialAtLevel?s.specialAtLevel(s.base):s.special||(s.name+': '+s.formula(s.base)[0]+'d'+s.formula(s.base)[1]+' '+s.type+' damage. '+(s.save||''));
@@ -764,6 +773,19 @@ $('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellB
  $('spellTotalValue').textContent=total;
  $('spellTotalType').textContent=type;
  display(message);
+});
+
+$('rollSpellTick').onclick=()=>safe(()=>{
+ const choice=$('spell').value,s=choice===''?null:spells[Number(choice)];
+ if(!s||s.edition!==edition.value||!s.triggered||!s.formula)throw Error('Choose a spell with repeatable effect damage.');
+ const level=s.upcast?Number($('slot').value):s.base;
+ if(!Number.isInteger(level)||level<s.base||level>9)throw Error('Invalid spell level.');
+ const damage=roll(...s.formula(level));
+ $('spellTotalValue').textContent=String(damage.total);
+ $('spellTotalType').textContent=s.type+' · single damage trigger';
+ display(s.name+' · Level '+level+' — EFFECT DAMAGE\nTOTAL: '+damage.total+' '+s.type+
+  '\nDice: ['+damage.dice.join(', ')+']\n'+(s.save||'')+
+  '\nDM decides whether the creature triggered the effect, its save, and damage applied.');
 });
 $('rule').onchange=()=>{$('ruleText').textContent=rules[Number($('rule').value)]?.[1]||''};
 // A compact dice pool modelled after Nothing But A TTRPG Dice Roller.
