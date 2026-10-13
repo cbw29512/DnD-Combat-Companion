@@ -223,6 +223,24 @@ gap:4px;align-content:stretch;overflow:hidden}
 .monster-front .card-top-tools{display:grid!important;grid-template-columns:38px minmax(0,1fr) 38px!important;align-items:center!important;min-height:38px;gap:6px}
 .monster-front .card-top-tools .card-name{display:block!important;visibility:visible!important;opacity:1!important;min-width:0;align-self:center;margin:0!important;padding:0;text-align:center;line-height:1.15;font-size:clamp(1rem,2.2vw,1.22rem);font-weight:800;color:#ffdb91;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .monster-front .card-top-tools button{width:38px;height:38px;min-height:38px}
+
+/* Larger tablet dice, with nat-20 celebration and nat-1 failure feedback. */
+#dice .dice-visuals{gap:clamp(9px,1.6vw,18px);padding:6px;align-content:center}
+#dice .rolled-die{width:clamp(84px,12vw,154px);height:clamp(94px,19vh,166px);flex:none;border-width:3px;border-radius:18px;transform:rotate(-3deg);background:linear-gradient(145deg,#506789,#19283f)}
+#dice .rolled-die:nth-child(even){transform:rotate(4deg)}
+#dice .rolled-die strong{font-size:clamp(2.6rem,8vh,5.5rem);line-height:1.1}
+#dice .rolled-die small{font-size:1rem;color:#ffdf98;font-weight:800}
+#dice .dice-moment{flex:none;text-align:center;border:2px solid;border-radius:9px;padding:6px;line-height:1.2;font-size:clamp(1.1rem,3vw,2rem);font-weight:900;letter-spacing:.06em}
+#dice .dice-moment[hidden]{display:none}
+#dice .dice-celebrate{background:#124a2b;border-color:#77ffc0;color:#c5ffe4;animation:dice-pop .65s ease-out}
+#dice .dice-fail{background:#52191e;border-color:#ff8a8a;color:#ffe0e0;animation:dice-shake .55s ease-out}
+#dice .die-critical{border-color:#5effa5;box-shadow:0 0 24px #35e88d88}
+#dice .die-failure{border-color:#ff7777;box-shadow:0 0 24px #e33c5088}
+@keyframes dice-pop{0%{transform:scale(.85);filter:brightness(2)}65%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes dice-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@media(max-width:650px){#dice .rolled-die{width:clamp(66px,19vw,110px);height:clamp(73px,14vh,116px)}
+#dice .rolled-die strong{font-size:clamp(2rem,6vh,3.6rem)}}
+@media(prefers-reduced-motion:reduce){#dice .dice-moment{animation:none}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -252,7 +270,7 @@ gap:4px;align-content:stretch;overflow:hidden}
   <div class="dice-options"><button id="undoDie">Undo last</button><button id="clearPool">Clear</button><a href="https://nothingbutattrpgdiceroller.netlify.app/" target="_blank" rel="noopener">Full 3D roller ↗</a></div>
  </div>
  <div class="dice-tray-pane"><div id="diceTray" class="dice-tray" role="button" tabindex="0" aria-label="Tap to roll selected dice">
-  <div class="tray-heading">DICE TRAY</div><div id="diceVisuals" class="dice-visuals"><span class="dice-placeholder">Choose dice, then roll</span></div>
+  <div class="tray-heading">DICE TRAY</div><div id="diceMoment" class="dice-moment" aria-live="assertive" aria-atomic="true" hidden></div><div id="diceVisuals" class="dice-visuals"><span class="dice-placeholder">Choose dice, then roll</span></div>
  </div><div class="dice-tray-bottom"><div class="dice-total"><span>TOTAL</span><strong id="diceTotal">—</strong><small id="diceDetail">Awaiting roll</small></div><button id="rollPool" class="primary">⚄ ROLL DICE</button></div></div>
 </div></section>
 <section class="panel"><h2>Roll results</h2><div class="out" id="output" role="status">Choose a monster attack, spell or dice roll. The DM determines hits, targets, saving throws and damage applied.</div><button id="clear">Clear results</button></section>
@@ -467,7 +485,7 @@ function rollDicePool(mode='normal'){
  if(mode!=='normal'){
   const a=secureDie(20),b=secureDie(20),chosen=mode==='advantage'?Math.max(a,b):Math.min(a,b);
   const mod=Number($('poolModifier').value);if(!Number.isInteger(mod)||Math.abs(mod)>1000)throw Error('Invalid modifier');
-  renderDiceResult([{sides:20,value:a},{sides:20,value:b}],chosen+mod,mode.toUpperCase()+' · '+a+' / '+b+' → '+chosen+' '+(mod>=0?'+':'')+mod);
+  renderDiceResult([{sides:20,value:a},{sides:20,value:b}],chosen+mod,mode.toUpperCase()+' · '+a+' / '+b+' → '+chosen+' '+(mod>=0?'+':'')+mod,chosen);
   return;
  }
  if(!dicePool.length)throw Error('Tap a die to add it first');
@@ -475,13 +493,15 @@ function rollDicePool(mode='normal'){
  const modifier=Number($('poolModifier').value);if(!Number.isInteger(modifier)||Math.abs(modifier)>1000)throw Error('Invalid modifier');
  const values=dicePool.map(sides=>({sides,value:secureDie(sides)}));
  const total=values.reduce((n,x)=>n+x.value,modifier);
- renderDiceResult(values,total,values.map(x=>'d'+x.sides+': '+x.value).join(' · ')+(modifier?' · modifier '+modifier:''));
+ renderDiceResult(values,total,values.map(x=>'d'+x.sides+': '+x.value).join(' · ')+(modifier?' · modifier '+modifier:''),values.length===1&&values[0].sides===20?values[0].value:null);
 }
-function renderDiceResult(values,total,detail){
+function renderDiceResult(values,total,detail,naturalD20=null){
  const area=$('diceVisuals');area.replaceChildren();
+ const moment=$('diceMoment');moment.hidden=true;moment.className='dice-moment';moment.textContent='';
  for(const item of values){const die=document.createElement('div');die.className='rolled-die';
   const val=document.createElement('strong');val.textContent=item.value;const sides=document.createElement('small');sides.textContent='d'+item.sides;
-  die.append(val,sides);area.append(die)}
+  die.append(val,sides);if(item.sides===20&&naturalD20===item.value&&values.length===1)die.classList.add(item.value===20?'die-critical':item.value===1?'die-failure':'');area.append(die)}
+ if(naturalD20===20||naturalD20===1){const critical=naturalD20===20;moment.hidden=false;moment.classList.add(critical?'dice-celebrate':'dice-fail');moment.textContent=critical?'★ NATURAL 20! ★':'✕ NATURAL 1!';flashAttackResult(critical,!critical)}
  $('diceTotal').textContent=total;$('diceDetail').textContent=detail;
  display('DICE ROLL TOTAL: '+total+'\n'+detail);
 }
@@ -489,7 +509,7 @@ document.querySelectorAll('[data-die]').forEach(btn=>btn.onclick=()=>safe(()=>{
  if(dicePool.length>=100)throw Error('Maximum 100 dice');dicePool.push(Number(btn.dataset.die));updateDicePool();
 }));
 $('undoDie').onclick=()=>{dicePool.pop();updateDicePool()};
-$('clearPool').onclick=()=>{dicePool.length=0;updateDicePool();$('diceVisuals').textContent='Choose dice, then roll';$('diceTotal').textContent='—';$('diceDetail').textContent='Awaiting roll'};
+$('clearPool').onclick=()=>{dicePool.length=0;updateDicePool();$('diceVisuals').textContent='Choose dice, then roll';$('diceTotal').textContent='—';$('diceDetail').textContent='Awaiting roll';$('diceMoment').hidden=true};
 $('rollPool').onclick=()=>safe(()=>rollDicePool());
 $('quickAdv').onclick=()=>safe(()=>rollDicePool('advantage'));
 $('quickDis').onclick=()=>safe(()=>rollDicePool('disadvantage'));
