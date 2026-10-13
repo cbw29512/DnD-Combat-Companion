@@ -668,7 +668,7 @@ function render(){
   const name=document.createElement('h3');name.className='card-name';name.textContent=m.name.replace(/ #\d+$/,'');name.title=m.name;
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
-  opt(select,[...(m.multiattacks||[]).map((a,i)=>['r:'+i,a.name]),...(m.actions||[]).map((a,i)=>['a:'+i,a.name]]);
+  opt(select,[...(m.multiattacks||[]).map((a,i)=>['r:'+i,a.name]),...(m.actions||[]).map((a,i)=>['a:'+i,a.name])]);
   let attackMode='normal';
   const result=document.createElement('div');result.className='result-grid';
   const hit=document.createElement('div');hit.className='result-num';hit.innerHTML='<small>TO HIT</small><strong>—</strong>';
