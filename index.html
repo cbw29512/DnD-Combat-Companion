@@ -379,6 +379,7 @@ main{gap:5px;padding:6px 10px}
 .concentration-bar input{width:105px;min-height:38px;padding:5px;font-size:.95rem}
 #concentrationStatus{flex:1;min-width:0;font-size:.94rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f5d48c;font-weight:650}
 .concentration-bar button{min-height:40px;padding:5px 10px;font-size:.93rem}
+.concentration-bar{flex-wrap:wrap}.concentration-bar #concentrationDamage{width:73px}.concentration-bar #concentrationDC{font-weight:700;white-space:nowrap}
 @media(max-width:510px){.concentration-bar{gap:4px;padding:4px}.concentration-bar label{font-size:.8rem}.concentration-bar input{width:76px;font-size:.84rem}.concentration-bar button{padding:4px 7px}}
 </style><link rel="stylesheet" href="./homebrew.css?v=3"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
@@ -395,6 +396,8 @@ main{gap:5px;padding:6px 10px}
  <label for="spellCaster">Caster <input id="spellCaster" maxlength="40" value="Caster 1" aria-label="Caster name for concentration"></label>
  <div id="concentrationStatus" role="status" aria-live="polite">No concentration</div>
  <button id="endConcentration">End</button>
+ <label for="concentrationDamage">Damage <input id="concentrationDamage" type="number" min="0" max="99999" value="0" inputmode="numeric" aria-label="Damage taken requiring concentration save"></label>
+ <span id="concentrationDC" aria-live="polite">DC 10</span><button id="concentrationPass">Save ✓</button><button id="concentrationFail">Fail ×</button>
 </div>
 <div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="spell-total" id="spellTotal" role="status" aria-live="polite"><span>TOTAL DAMAGE</span><strong id="spellTotalValue">—</strong><small id="spellTotalType">Cast a spell to roll</small></div><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button class="primary hidden" id="rollSpellTick">ROLL TICK</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
@@ -782,12 +785,32 @@ function endConcentration(editionId,caster){
  localStorage.setItem(CONCENTRATION_KEY,JSON.stringify(concentrations));
  refreshConcentration();return true;
 }
+function concentrationDamageDC(damage){
+ try{
+  if(!Number.isInteger(damage)||damage<0||damage>99999)throw Error('Enter damage between 0 and 99999.');
+  return Math.max(10,Math.floor(damage/2));
+ }catch(e){console.warn('Concentration DC rejected',e);throw e}
+}
+function concentrationDecision(passed){
+ try{
+  const caster=$('spellCaster').value,active=getConcentration(edition.value,caster);
+  if(!active)throw Error('No active concentration for this caster.');
+  const damage=Number($('concentrationDamage').value),dc=concentrationDamageDC(damage);
+  if(damage===0)throw Error('Enter damage taken first.');
+  if(passed){display(active.caster+' maintained '+active.spell+' after damage '+damage+' (CON save DC '+dc+', DM confirmed).')}
+  else{endConcentration(edition.value,caster);display(active.caster+' lost concentration on '+active.spell+' after damage '+damage+' (CON save DC '+dc+', DM confirmed).')}
+ }catch(e){console.warn('Concentration decision rejected',e);alert(e.message)}
+}
 function refreshConcentration(){
  const current=getConcentration(edition.value,$('spellCaster').value);
  $('concentrationStatus').textContent=current?'Concentrating: '+current.spell+' (Lv '+current.level+')':'No concentration';
  $('endConcentration').disabled=!current;
+ $('concentrationPass').disabled=!current;$('concentrationFail').disabled=!current;
 }
 $('spellCaster').oninput=refreshConcentration;
+$('concentrationDamage').oninput=()=>{try{$('concentrationDC').textContent='DC '+concentrationDamageDC(Number($('concentrationDamage').value))}catch(e){$('concentrationDC').textContent='Invalid damage'}};
+$('concentrationPass').onclick=()=>concentrationDecision(true);
+$('concentrationFail').onclick=()=>concentrationDecision(false);
 $('endConcentration').onclick=()=>{const spell=getConcentration(edition.value,$('spellCaster').value);
  if(endConcentration(edition.value,$('spellCaster').value))display(spell.caster+' ended concentration on '+spell.spell+'.')};
 
