@@ -134,6 +134,14 @@ gap:4px;align-content:stretch;overflow:hidden}
 .monster-front select{height:32px}
 .monster-front .card-actions button.primary{height:44px}
 }
+
+/* Compact, one-row encounter picker instead of two full-width selects. */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+#monsters .monster-picker{display:grid;grid-template-columns:minmax(78px,110px) minmax(0,280px) auto;justify-content:start;gap:7px;align-items:center;flex:none}
+#monsters .monster-picker select{width:100%;min-width:0;max-width:none;min-height:40px}
+#monsters .monster-picker #add{min-height:40px;white-space:nowrap;padding:6px 14px}
+@media(max-width:390px){#monsters .monster-picker{grid-template-columns:70px minmax(0,1fr) auto;gap:4px}
+#monsters .monster-picker #add{padding:6px 8px}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -141,9 +149,7 @@ gap:4px;align-content:stretch;overflow:hidden}
 <label for="edition">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select>
 <nav class="tabs" aria-label="Sections"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs & Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav>
 <section id="monsters" class="panel"><h2>Encounter monsters</h2>
-<label for="cr">Challenge rating</label><select id="cr"></select>
-<label for="monster">Choose monster</label><select id="monster"></select>
-<div class="row"><button class="primary" id="add">+ Add monster</button></div>
+<div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div>
 <h3>Encounter cards</h3><div id="roster" class="card-gallery" aria-live="polite"></div><div id="actions" class="hidden"></div>
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
