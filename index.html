@@ -241,6 +241,49 @@ gap:4px;align-content:stretch;overflow:hidden}
 @media(max-width:650px){#dice .rolled-die{width:clamp(66px,19vw,110px);height:clamp(73px,14vh,116px)}
 #dice .rolled-die strong{font-size:clamp(2rem,6vh,3.6rem)}}
 @media(prefers-reduced-motion:reduce){#dice .dice-moment{animation:none}}
+
+/* Readability pass: larger text, less empty illustration area, no page scroll. */
+:root{font-size:18px}
+header h1{font-size:1.35rem}
+nav.tabs button{font-size:1rem;min-height:45px;padding:7px 14px}
+#edition{font-size:1rem;min-height:44px}
+#monsters .monster-picker{grid-template-columns:minmax(88px,105px) minmax(0,285px) auto;gap:9px}
+#monsters .monster-picker select,#monsters .monster-picker #add{font-size:1rem;min-height:44px}
+.flip-card{flex-basis:clamp(275px,37vw,355px)}
+.monster-front{grid-template-rows:45px minmax(0,0.65fr) auto 44px auto 56px;gap:7px}
+.monster-front .card-top-tools{grid-template-columns:42px minmax(0,1fr) 42px!important}
+.monster-front .card-top-tools .card-name{font-size:1.24rem;overflow:hidden}
+.monster-front .card-top-tools button{width:42px;min-height:42px;height:42px;font-size:1.4rem}
+.monster-front .card-meta{font-size:.98rem;line-height:1.2}
+.monster-front select{font-size:1rem;height:44px;min-height:44px}
+.monster-front .result-num small{font-size:.85rem;line-height:1.15}
+.monster-front .result-num strong{font-size:clamp(1.9rem,5vh,2.65rem)}
+.monster-front .result-num{padding:4px 3px}
+.monster-front .card-actions{grid-template-columns:64px minmax(0,1fr) 64px}
+.monster-front .card-actions button{font-size:.95rem;min-height:52px}
+.monster-front .card-actions button.primary{font-size:1.1rem;height:56px;min-height:52px}
+.card-back{font-size:1rem}
+#spells .spell-picker select{font-size:1rem;min-height:44px}
+#spells #spellCard .spell-front .card-name{font-size:1.3rem}
+#spells #spellCard .spell-front .card-meta{font-size:1rem}
+#spells #spellCard .spell-front .card-actions #cast{font-size:1.2rem}
+#rules #ruleText{font-size:1.05rem;line-height:1.45}
+#dice .dice-selector button{font-size:1.05rem}
+#dice .dice-total strong{font-size:2.6rem}
+@media(max-height:740px){
+ .monster-front{grid-template-rows:40px minmax(0,0.5fr) auto 39px auto 48px;gap:4px}
+ .monster-front .card-top-tools button{height:38px;min-height:38px}
+ .monster-front select{height:39px;min-height:39px}
+ .monster-front .card-actions button.primary{height:48px;min-height:48px}
+ .monster-front .card-actions button{min-height:48px}
+ nav.tabs button{min-height:39px}
+ #edition{min-height:39px}
+}
+@media(max-width:600px){.flip-card{flex-basis:min(92vw,355px)}
+ .monster-front .card-top-tools .card-name{font-size:1.15rem}
+ #monsters .monster-picker{grid-template-columns:80px minmax(0,1fr) auto;gap:5px}
+ #monsters .monster-picker #add{padding:6px 9px}
+}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
