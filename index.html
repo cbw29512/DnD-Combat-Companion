@@ -218,6 +218,11 @@ gap:4px;align-content:stretch;overflow:hidden}
 #dice .dice-quick>button{min-height:36px;padding:4px 7px}
 #dice .rolled-die{width:44px;height:47px}
 }
+
+/* Keep creature name visibly centered between permanent corner controls. */
+.monster-front .card-top-tools{display:grid!important;grid-template-columns:38px minmax(0,1fr) 38px!important;align-items:center!important;min-height:38px;gap:6px}
+.monster-front .card-top-tools .card-name{display:block!important;visibility:visible!important;opacity:1!important;min-width:0;align-self:center;margin:0!important;padding:0;text-align:center;line-height:1.15;font-size:clamp(1rem,2.2vw,1.22rem);font-weight:800;color:#ffdb91;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.monster-front .card-top-tools button{width:38px;height:38px;min-height:38px}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -356,7 +361,7 @@ function render(){
   const front=document.createElement('article');front.className='card-face monster-front';
   const back=document.createElement('article');back.className='card-face card-back';
   const art=document.createElement('div');art.className='card-art';art.setAttribute('role','button');art.tabIndex=0;art.title='Tap artwork to show rules';art.setAttribute('aria-label','Show rules for '+m.name);art.append(makeMonsterSilhouette(m.name));art.onclick=()=>card.classList.add('flipped');art.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.classList.add('flipped')}};
-  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
+  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name.replace(/ #\d+$/,'');name.title=m.name;
   const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
   const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
   opt(select,(m.actions||[]).map((a,i)=>[String(i),a.name]));
