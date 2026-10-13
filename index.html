@@ -366,6 +366,14 @@ main{gap:5px;padding:6px 10px}
 .monster-rules-details summary{cursor:pointer;font-weight:700;color:#f4d29a}
 .monster-rules-details .card-meta{font-size:.85rem;line-height:1.4;white-space:pre-line;overflow-wrap:anywhere}
 #monsters .card-back>button{margin-top:0;flex:none;font-size:.95rem}
+
+/* Compact caster-scoped concentration: one row, deliberately manual for saves/duration. */
+.concentration-bar{display:flex;align-items:center;gap:7px;min-height:43px;padding:5px 9px;background:#18263a;border:1px solid #506a82;border-radius:9px;margin:4px 0}
+.concentration-bar label{display:flex;align-items:center;gap:5px;white-space:nowrap;margin:0;font-size:.9rem}
+.concentration-bar input{width:105px;min-height:38px;padding:5px;font-size:.95rem}
+#concentrationStatus{flex:1;min-width:0;font-size:.94rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f5d48c;font-weight:650}
+.concentration-bar button{min-height:40px;padding:5px 10px;font-size:.93rem}
+@media(max-width:510px){.concentration-bar{gap:4px;padding:4px}.concentration-bar label{font-size:.8rem}.concentration-bar input{width:76px;font-size:.84rem}.concentration-bar button{padding:4px 7px}}
 </style><link rel="stylesheet" href="./homebrew.css?v=3"></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
 <div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button><button data-tab="homebrew" aria-pressed="false">Homebrew</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
@@ -377,6 +385,11 @@ main{gap:5px;padding:6px 10px}
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
 <div class="spell-picker"><label class="sr-only" for="spell">Choose spell</label><select id="spell" aria-label="Choose spell"></select><div id="upcastArea"><label class="sr-only" for="slot">Spell slot level</label><select id="slot" aria-label="Cast at level"></select></div></div>
+<div class="concentration-bar" role="group" aria-label="Spell concentration">
+ <label for="spellCaster">Caster <input id="spellCaster" maxlength="40" value="Caster 1" aria-label="Caster name for concentration"></label>
+ <div id="concentrationStatus" role="status" aria-live="polite">No concentration</div>
+ <button id="endConcentration">End</button>
+</div>
 <div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="spell-total" id="spellTotal" role="status" aria-live="polite"><span>TOTAL DAMAGE</span><strong id="spellTotalValue">—</strong><small id="spellTotalType">Cast a spell to roll</small></div><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button class="primary hidden" id="rollSpellTick">ROLL TICK</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
 <section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><p class="muted">These are 2014 5e reference examples. Other editions require their own rules and are not yet available.</p><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
@@ -526,42 +539,42 @@ const spells=[
 {edition:'2014',name:"Burning Hands",base:1,upcast:true,formula:l=>[3+(l-1)*1,6,0],save:"Self: 15-ft cone; Dexterity save half. Exposed flammables ignite.",type:"fire"},
 {edition:'2014',name:"Thunderwave",base:1,upcast:true,formula:l=>[2+(l-1)*1,8,0],save:"Self: 15-ft cube; Constitution save half, failure pushes 10 ft.",type:"thunder"},
 {edition:'2014',name:"Shatter",base:2,upcast:true,formula:l=>[3+(l-2)*1,8,0],save:"60-ft range, 10-ft radius. Constitution save half; creatures made of inorganic material have disadvantage.",type:"thunder"},
-{edition:'2014',name:'Cloud of Daggers',base:2,upcast:true,formula:l=>[4+2*(l-2),4,0],triggered:true,save:'5-ft cube; no save. Damage when creature first enters on a turn or starts there. Concentration up to 1 minute.',type:'slashing'},
-{edition:'2014',name:'Moonbeam',base:2,upcast:true,formula:l=>[2+(l-2),10,0],triggered:true,save:'5-ft-radius 40-ft-high cylinder; Constitution save half. Damage on entry/start of turn, not casting. Concentration 1 minute.',type:'radiant'},
+{edition:'2014',name:'Cloud of Daggers',concentration:true,base:2,upcast:true,formula:l=>[4+2*(l-2),4,0],triggered:true,save:'5-ft cube; no save. Damage when creature first enters on a turn or starts there. Concentration up to 1 minute.',type:'slashing'},
+{edition:'2014',name:'Moonbeam',concentration:true,base:2,upcast:true,formula:l=>[2+(l-2),10,0],triggered:true,save:'5-ft-radius 40-ft-high cylinder; Constitution save half. Damage on entry/start of turn, not casting. Concentration 1 minute.',type:'radiant'},
 {edition:'2014',name:"Lightning Bolt",base:3,upcast:true,formula:l=>[8+(l-3)*1,6,0],save:"Self: 100-ft line 5-ft wide; Dexterity save half.",type:"lightning"},
-{edition:'2014',name:'Call Lightning',base:3,upcast:true,formula:l=>[3+(l-3),10,0],save:'120-ft range, 5-ft-radius strike; Dexterity save half. Repeat with action while concentrating. Existing outdoor storm adds 1d10 (roll separately).',type:'lightning'},
+{edition:'2014',name:'Call Lightning',concentration:true,base:3,upcast:true,formula:l=>[3+(l-3),10,0],save:'120-ft range, 5-ft-radius strike; Dexterity save half. Repeat with action while concentrating. Existing outdoor storm adds 1d10 (roll separately).',type:'lightning'},
 {edition:'2014',name:"Cone of Cold",base:5,upcast:true,formula:l=>[8+(l-5)*1,8,0],save:"Self: 60-ft cone; Constitution save half. Creatures killed freeze into statues until thawed.",type:"cold"},
-{edition:'2014',name:'Heat Metal',base:2,upcast:true,formula:l=>[2+(l-2),8,0],save:'60-ft range; manufactured metal object heats. Deals fire on cast, repeat with bonus action while concentrating. Holding creature may save Con to avoid dropping.',type:'fire'},
-{edition:'2014',name:"Bless",base:1,upcast:true,special:"Concentration 1 minute. 3 creatures add 1d4 to attacks and saving throws.",specialAtLevel:l=>'Concentration 1 minute: '+(l+2)+' creatures add 1d4 to attack rolls and saving throws.'},
-{edition:'2014',name:"Bane",base:1,upcast:true,special:"Charisma save; 3 creatures subtract 1d4 from attacks and saving throws. Concentration 1 minute.",specialAtLevel:l=>'Charisma save: '+(l+2)+' creatures subtract 1d4 from attack rolls and saving throws. Concentration 1 minute.'},
-{edition:'2014',name:"Hold Person",base:2,upcast:true,special:"Wisdom save or paralyzed, end-turn saves, concentration 1 minute. Humanoids only.",specialAtLevel:l=>'Wisdom save or paralyzed; end-turn saves, concentration 1 minute. '+(l-1)+' humanoid target(s), within 30 ft. of each other.'},
-{edition:'2014',name:"Fog Cloud",base:1,upcast:true,special:"Heavily obscured 20-ft-radius fog sphere. Concentration up to 1 hour.",specialAtLevel:l=>'Heavily obscured '+(20*l)+'-ft-radius sphere. Concentration up to 1 hour.'},
-{edition:'2014',name:"Invisibility",base:2,upcast:true,special:"Touch; invisible until attack/spellcast or concentration ends (1 hour).",specialAtLevel:l=>'Touch '+(l-1)+' creature(s); invisible until attack/spellcast or concentration ends (1 hour).'},
-{edition:'2014',name:"Fly",base:3,upcast:true,special:"Touch; flying speed 60 ft. Concentration 10 minutes.",specialAtLevel:l=>'Touch '+(l-2)+' creature(s), flying speed 60 ft.; concentration 10 minutes.'},
+{edition:'2014',name:'Heat Metal',concentration:true,base:2,upcast:true,formula:l=>[2+(l-2),8,0],save:'60-ft range; manufactured metal object heats. Deals fire on cast, repeat with bonus action while concentrating. Holding creature may save Con to avoid dropping.',type:'fire'},
+{edition:'2014',name:"Bless",concentration:true,base:1,upcast:true,special:"Concentration 1 minute. 3 creatures add 1d4 to attacks and saving throws.",specialAtLevel:l=>'Concentration 1 minute: '+(l+2)+' creatures add 1d4 to attack rolls and saving throws.'},
+{edition:'2014',name:"Bane",concentration:true,base:1,upcast:true,special:"Charisma save; 3 creatures subtract 1d4 from attacks and saving throws. Concentration 1 minute.",specialAtLevel:l=>'Charisma save: '+(l+2)+' creatures subtract 1d4 from attack rolls and saving throws. Concentration 1 minute.'},
+{edition:'2014',name:"Hold Person",concentration:true,base:2,upcast:true,special:"Wisdom save or paralyzed, end-turn saves, concentration 1 minute. Humanoids only.",specialAtLevel:l=>'Wisdom save or paralyzed; end-turn saves, concentration 1 minute. '+(l-1)+' humanoid target(s), within 30 ft. of each other.'},
+{edition:'2014',name:"Fog Cloud",concentration:true,base:1,upcast:true,special:"Heavily obscured 20-ft-radius fog sphere. Concentration up to 1 hour.",specialAtLevel:l=>'Heavily obscured '+(20*l)+'-ft-radius sphere. Concentration up to 1 hour.'},
+{edition:'2014',name:"Invisibility",concentration:true,base:2,upcast:true,special:"Touch; invisible until attack/spellcast or concentration ends (1 hour).",specialAtLevel:l=>'Touch '+(l-1)+' creature(s); invisible until attack/spellcast or concentration ends (1 hour).'},
+{edition:'2014',name:"Fly",concentration:true,base:3,upcast:true,special:"Touch; flying speed 60 ft. Concentration 10 minutes.",specialAtLevel:l=>'Touch '+(l-2)+' creature(s), flying speed 60 ft.; concentration 10 minutes.'},
 {edition:'2014',name:"Counterspell",base:3,upcast:true,special:"Reaction 60 ft.; automatically stop spell level 3 or lower; higher requires a spellcasting ability check.",specialAtLevel:l=>'Reaction 60 ft.; automatically counter spell level '+l+' or lower; higher requires spellcasting check DC 10 + spell level.'},
 {edition:'2014',name:"Dispel Magic",base:3,upcast:true,special:"Range 120 ft.; automatically dispel spells of level 3 or lower on target; higher requires a spellcasting ability check.",specialAtLevel:l=>'120-ft range; dispel spells of level '+l+' or lower on target. Higher requires spellcasting check DC 10 + spell level.'},
-{edition:'2014',name:"Darkness",base:2,upcast:false,special:"Magical darkness in 15-ft-radius sphere; concentration 10 minutes. Darkvision cannot see through; nonmagical light cannot illuminate."},
-{edition:'2014',name:"Faerie Fire",base:1,upcast:false,special:"20-ft cube; Dexterity save or outlined, granting advantage to visible attacks; invisibility negated while outlined. Concentration 1 minute."},
+{edition:'2014',name:"Darkness",concentration:true,base:2,upcast:false,special:"Magical darkness in 15-ft-radius sphere; concentration 10 minutes. Darkvision cannot see through; nonmagical light cannot illuminate."},
+{edition:'2014',name:"Faerie Fire",concentration:true,base:1,upcast:false,special:"20-ft cube; Dexterity save or outlined, granting advantage to visible attacks; invisibility negated while outlined. Concentration 1 minute."},
 {edition:'2014',name:"Grease",base:1,upcast:false,special:"10-ft square within 60 ft.; difficult terrain 1 minute; Dexterity save or prone when cast, enters, or ends turn there."},
-{edition:'2014',name:"Haste",base:3,upcast:false,special:"Concentration 1 minute; double speed, +2 AC, advantage on Dexterity saves, one restricted extra action. On ending, target loses movement and actions for a turn."},
+{edition:'2014',name:"Haste",concentration:true,base:3,upcast:false,special:"Concentration 1 minute; double speed, +2 AC, advantage on Dexterity saves, one restricted extra action. On ending, target loses movement and actions for a turn."},
 {edition:'2014',name:"Mage Armor",base:1,upcast:false,special:"Unarmored creature gains base AC 13 + Dex modifier for 8 hours; ends if armor donned."},
 {edition:'2014',name:"Misty Step",base:2,upcast:false,special:"Bonus action; teleport 30 ft. to an unoccupied visible space."},
 {edition:'2014',name:"Mirror Image",base:2,upcast:false,special:"Three illusory duplicates for 1 minute; attack redirect d20 mechanic, duplicates AC 10 + Dexterity modifier. No concentration."},
-{edition:'2014',name:"Shield of Faith",base:1,upcast:false,special:"Bonus action; +2 AC to one creature within 60 ft.; concentration up to 10 minutes."},
-{edition:'2014',name:"Web",base:2,upcast:false,special:"20-ft cube. Difficult terrain and lightly obscured; Dexterity save or restrained upon entry/turn start. Concentration 1 hour; fire ignites webs."},
-{edition:'2014',name:"Protection from Evil and Good",base:1,upcast:false,special:"Touch, concentration 10 minutes. Aberrations, celestials, elementals, fey, fiends, and undead have disadvantage attacking target; charm/frighten/possess protections."},
+{edition:'2014',name:"Shield of Faith",concentration:true,base:1,upcast:false,special:"Bonus action; +2 AC to one creature within 60 ft.; concentration up to 10 minutes."},
+{edition:'2014',name:"Web",concentration:true,base:2,upcast:false,special:"20-ft cube. Difficult terrain and lightly obscured; Dexterity save or restrained upon entry/turn start. Concentration 1 hour; fire ignites webs."},
+{edition:'2014',name:"Protection from Evil and Good",concentration:true,base:1,upcast:false,special:"Touch, concentration 10 minutes. Aberrations, celestials, elementals, fey, fiends, and undead have disadvantage attacking target; charm/frighten/possess protections."},
 {edition:'2014',name:'Blindness/Deafness',base:2,upcast:true,special:'30 ft.; Constitution save or blinded/deafened, repeats at end of turns. No concentration.',specialAtLevel:l=>'30 ft.; '+(l-1)+' target(s); Constitution save or blinded/deafened for 1 minute; end-turn saves. No concentration.'},
 {"edition":"2014","name":"Lesser Restoration","base":2,"upcast":false,"special":"Touch: end one disease or one of blinded, deafened, paralyzed, poisoned."},
 {"edition":"2014","name":"See Invisibility","base":2,"upcast":false,"special":"Self, 1 hour: see invisible creatures and objects as though visible, and into the Ethereal Plane (ethereal creatures appear ghostly)."},
-{"edition":"2014","name":"Blur","base":2,"upcast":false,"special":"Self, concentration up to 1 minute: sight-dependent attacks against you have disadvantage. No effect on attackers with blindsight or truesight."},
-{"edition":"2014","name":"Levitate","base":2,"upcast":false,"special":"60 ft.; one visible creature or object up to 500 lb rises up to 20 ft. Concentration 10 minutes; unwilling creature gets Constitution save."},
-{"edition":"2014","name":"Greater Invisibility","base":4,"upcast":false,"special":"Touch; invisible for concentration up to 1 minute; attacks and spells do not automatically end this invisibility."},
+{"edition":"2014","name":"Blur",concentration:true,"base":2,"upcast":false,"special":"Self, concentration up to 1 minute: sight-dependent attacks against you have disadvantage. No effect on attackers with blindsight or truesight."},
+{"edition":"2014","name":"Levitate",concentration:true,"base":2,"upcast":false,"special":"60 ft.; one visible creature or object up to 500 lb rises up to 20 ft. Concentration 10 minutes; unwilling creature gets Constitution save."},
+{"edition":"2014","name":"Greater Invisibility",concentration:true,"base":4,"upcast":false,"special":"Touch; invisible for concentration up to 1 minute; attacks and spells do not automatically end this invisibility."},
 {edition:'2014',name:'Feather Fall',base:1,upcast:false,special:'Reaction when a creature within 60 ft falls. Up to five falling creatures descend 60 ft each round and take no falling damage on landing (up to 1 minute).'},
-{edition:'2014',name:'Silence',base:2,upcast:false,special:'120-ft range; 20-ft-radius soundless sphere. Creatures within are deafened and immune to thunder damage; verbal spell components cannot be used. Concentration 10 minutes.'},
+{edition:'2014',name:'Silence',concentration:true,base:2,upcast:false,special:'120-ft range; 20-ft-radius soundless sphere. Creatures within are deafened and immune to thunder damage; verbal spell components cannot be used. Concentration 10 minutes.'},
 {edition:'2014',name:'Dimension Door',base:4,upcast:false,special:'Teleport up to 500 ft to a place described or visualized; may bring a willing adjacent creature of same size or smaller. Occupied destination prevents teleport and causes force damage.'},
-{edition:'2014',name:'Banishment',base:4,upcast:true,special:'60 ft; Charisma save or banished while concentration lasts, up to 1 minute.',specialAtLevel:l=>'60 ft; '+(l-3)+' target(s) make Charisma saves or are banished. Concentration up to 1 minute; DM determines plane-of-origin return.'},
+{edition:'2014',name:'Banishment',concentration:true,base:4,upcast:true,special:'60 ft; Charisma save or banished while concentration lasts, up to 1 minute.',specialAtLevel:l=>'60 ft; '+(l-3)+' target(s) make Charisma saves or are banished. Concentration up to 1 minute; DM determines plane-of-origin return.'},
 {edition:'2014',name:'Death Ward',base:4,upcast:false,special:'Touch; 8 hours, no concentration. First time damage would drop target to 0 HP, it drops to 1 instead; effect that would instantly kill without damage is negated once.'},
-{edition:'2014',name:'Hold Monster',base:5,upcast:true,special:'90 ft; Wisdom save or paralyzed, repeated at end of turns, concentration up to 1 minute. No effect on undead.',specialAtLevel:l=>'90 ft; '+(l-4)+' creature target(s) within 30 ft of each other, Wisdom save or paralyzed; repeat saves at end of turns. No effect on undead.'},
+{edition:'2014',name:'Hold Monster',concentration:true,base:5,upcast:true,special:'90 ft; Wisdom save or paralyzed, repeated at end of turns, concentration up to 1 minute. No effect on undead.',specialAtLevel:l=>'90 ft; '+(l-4)+' creature target(s) within 30 ft of each other, Wisdom save or paralyzed; repeat saves at end of turns. No effect on undead.'},
 {edition:'2014',name:'Blight',base:4,upcast:true,formula:l=>[8+(l-4),8,0],save:'30 ft; Constitution save for half. No effect on undead or constructs. Plant creatures have disadvantage and take maximum damage on failed save (DM adjusts).',type:'necrotic'},
 {edition:'2014',name:'Circle of Death',base:6,upcast:true,formula:l=>[8+2*(l-6),6,0],save:'150 ft; 60-ft-radius sphere; Constitution save for half damage.',type:'necrotic'},
 {edition:'2014',name:'Disintegrate',base:6,upcast:true,formula:l=>[10+3*(l-6),6,40],save:'60 ft; Dexterity save prevents ALL damage on success. On failure take full force damage. Disintegration if spell reduces target to 0 HP; DM adjudicates.',type:'force'},
@@ -672,6 +685,44 @@ function updateMonsters(){const list=monsters.filter(m=>m.edition===edition.valu
 function crNumber(cr){const [num,den]=String(cr).split('/').map(Number);return den?num/den:num}
 function updateMonsterList(){const list=monsters.filter(m=>m.edition===edition.value&&m.cr===$('cr').value).sort((a,b)=>a.name.localeCompare(b.name));opt($('monster'),list.length?list.map((m,i)=>[String(monsters.indexOf(m)),m.name]):[['','No cards available']]);}
 function updateSpells(){const list=spells.filter(s=>s.edition===edition.value).sort((a,b)=>a.name.localeCompare(b.name));opt($('spell'),list.length?list.map(s=>[String(spells.indexOf(s)),s.name]):[['','No verified spells for this edition']]);updateSpellDetails()}
+
+const CONCENTRATION_KEY='cc-concentration-v1';
+let concentrations=[];
+try{const loaded=JSON.parse(localStorage.getItem(CONCENTRATION_KEY)||'[]');
+ if(Array.isArray(loaded))concentrations=loaded.filter(x=>x&&typeof x.edition==='string'&&typeof x.caster==='string'&&typeof x.spell==='string').slice(0,50);
+}catch(e){console.warn('Concentration record recovery failed',e)}
+function getConcentration(editionId,caster){
+ const tag=String(caster||'').trim();
+ return concentrations.find(x=>x.edition===editionId&&x.caster.toLowerCase()===tag.toLowerCase())||null;
+}
+function setConcentration(editionId,caster,spell,level){
+ const tag=String(caster||'').trim().slice(0,40);
+ if(!tag)throw Error('Enter a caster name to track concentration.');
+ if(!Number.isInteger(level)||level<0||level>9)throw Error('Invalid spell level.');
+ const previous=getConcentration(editionId,tag);
+ concentrations=concentrations.filter(x=>!(x.edition===editionId&&x.caster.toLowerCase()===tag.toLowerCase()));
+ concentrations.push({edition:editionId,caster:tag,spell:String(spell).slice(0,80),level});
+ if(concentrations.length>50)concentrations.shift();
+ localStorage.setItem(CONCENTRATION_KEY,JSON.stringify(concentrations));
+ refreshConcentration();
+ return previous;
+}
+function endConcentration(editionId,caster){
+ const match=getConcentration(editionId,caster);
+ if(!match)return false;
+ concentrations=concentrations.filter(x=>x!==match);
+ localStorage.setItem(CONCENTRATION_KEY,JSON.stringify(concentrations));
+ refreshConcentration();return true;
+}
+function refreshConcentration(){
+ const current=getConcentration(edition.value,$('spellCaster').value);
+ $('concentrationStatus').textContent=current?'Concentrating: '+current.spell+' (Lv '+current.level+')':'No concentration';
+ $('endConcentration').disabled=!current;
+}
+$('spellCaster').oninput=refreshConcentration;
+$('endConcentration').onclick=()=>{const spell=getConcentration(edition.value,$('spellCaster').value);
+ if(endConcentration(edition.value,$('spellCaster').value))display(spell.caster+' ended concentration on '+spell.spell+'.')};
+
 function updateSpellDetails(){
  const key=$('spell').value,s=key===''?null:spells[Number(key)];
  $('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';
@@ -912,6 +963,11 @@ $('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellB
    +'\nDice: ['+damage.dice.join(', ')+']'
    +'\n'+(s.save||'')+'\nDM determines targets, save results and damage applied.';
  }
+ if(s.concentration){
+  const replaced=setConcentration(edition.value,$('spellCaster').value,s.name,level);
+  message+='\nCONCENTRATION: '+$('spellCaster').value.trim()+' is concentrating on '+s.name+
+   (replaced?' (replaces '+replaced.spell+').':'.');
+ }
  $('spellTotalValue').textContent=total;
  $('spellTotalType').textContent=type;
  display(message);
@@ -980,6 +1036,6 @@ $('diceTray').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();
 updateDicePool();
 $('clear').onclick=()=>output.textContent='Results cleared.';
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice','homebrew'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
-edition.onchange=()=>{selected=null;updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.';};
-opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
+edition.onchange=()=>{selected=null;updateMonsters();updateSpells();render();refreshConcentration();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.';};
+opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();refreshConcentration();
 </script><script src="./homebrew.js?v=5"></script></body></html>
