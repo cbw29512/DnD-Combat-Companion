@@ -284,12 +284,18 @@ nav.tabs button{font-size:1rem;min-height:45px;padding:7px 14px}
  #monsters .monster-picker{grid-template-columns:80px minmax(0,1fr) auto;gap:5px}
  #monsters .monster-picker #add{padding:6px 9px}
 }
+
+/* One responsive toolbar: edition and combat destinations on the same line. */
+.combat-toolbar{display:flex;align-items:center;gap:9px;flex:none;min-width:0;width:100%;overflow:hidden}
+.combat-toolbar #edition{flex:0 0 clamp(136px,19vw,210px);max-width:210px;width:auto;min-width:0;margin:0;min-height:45px}
+.combat-toolbar nav.tabs{display:flex;align-items:center;flex:1;min-width:0;gap:6px;margin:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.combat-toolbar nav.tabs button{flex:0 0 auto;white-space:nowrap;margin:0}
+@media(max-width:700px){.combat-toolbar{gap:5px}.combat-toolbar #edition{flex-basis:135px;min-height:41px;font-size:.86rem;padding:5px}.combat-toolbar nav.tabs{gap:4px}.combat-toolbar nav.tabs button{font-size:.85rem;min-height:41px;padding:5px 9px}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
 <div class="warn" id="notice">Working website preview. Edition selectors are available, but only the explicitly listed sample cards have automatic rolls. Full nine-edition catalogs are still in development.</div>
-<label for="edition">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select>
-<nav class="tabs" aria-label="Sections"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs & Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav>
+<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav></div>
 <section id="monsters" class="panel"><h2>Encounter monsters</h2>
 <div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div>
 <h3>Encounter cards</h3><div id="roster" class="card-gallery" aria-live="polite"></div><div id="actions" class="hidden"></div>
