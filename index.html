@@ -142,6 +142,22 @@ gap:4px;align-content:stretch;overflow:hidden}
 #monsters .monster-picker #add{min-height:40px;white-space:nowrap;padding:6px 14px}
 @media(max-width:390px){#monsters .monster-picker{grid-template-columns:70px minmax(0,1fr) auto;gap:4px}
 #monsters .monster-picker #add{padding:6px 8px}}
+
+/* Spell casting is a first-class tablet action: reserve the CAST row. */
+#spells .spell-picker{display:flex;align-items:center;gap:8px;flex:none}
+#spells .spell-picker #spell{width:min(60vw,290px);min-width:0;max-width:100%}
+#spells .spell-picker #upcastArea{flex:none}
+#spells .spell-picker #slot{width:115px;max-width:30vw}
+#spells #spellCard{width:min(100%,420px);height:100%;margin:0 auto}
+#spells #spellCard .flip-inner{height:100%;min-height:0}
+#spells #spellCard .spell-front{display:grid;grid-template-rows:minmax(30px,1fr) auto minmax(0,auto) auto;gap:7px;min-height:0;overflow:hidden}
+#spells #spellCard .spell-front .card-art{height:100%;min-height:30px;max-height:none}
+#spells #spellCard .spell-front .card-meta{overflow:auto;max-height:24vh;margin:0}
+#spells #spellCard .spell-front .card-actions{display:grid;grid-template-columns:1fr auto;align-items:center;gap:7px;margin:0;min-height:48px}
+#spells #spellCard .spell-front .card-actions #cast{grid-column:1;display:block;width:100%;min-height:48px;padding:6px;font-weight:800;font-size:1.1rem}
+#spells #spellCard .spell-front .card-actions #flipSpell{min-height:48px;padding:6px 10px;font-size:.85rem}
+@media(max-height:650px){#spells #spellCard .spell-front{gap:4px}#spells #spellCard .spell-front .card-actions #cast,#spells #spellCard .spell-front .card-actions #flipSpell{min-height:42px}}
+@media(max-width:410px){#spells .spell-picker #spell{width:min(52vw,250px)}#spells .spell-picker #slot{width:104px}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -153,9 +169,8 @@ gap:4px;align-content:stretch;overflow:hidden}
 <h3>Encounter cards</h3><div id="roster" class="card-gallery" aria-live="polite"></div><div id="actions" class="hidden"></div>
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
-<label for="spell">Choose spell</label><select id="spell"></select>
-<div id="upcastArea"><label for="slot">Cast at level</label><select id="slot"></select></div>
-<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="card-actions"><button class="primary" id="cast">✦ CAST</button><button id="flipSpell">Flip / Rules</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
+<div class="spell-picker"><label class="sr-only" for="spell">Choose spell</label><select id="spell" aria-label="Choose spell"></select><div id="upcastArea"><label class="sr-only" for="slot">Spell slot level</label><select id="slot" aria-label="Cast at level"></select></div></div>
+<div id="spellCard" class="flip-card"><div class="flip-inner"><article class="card-face spell-front"><div class="card-art" aria-hidden="true">✦</div><h3 class="card-name" id="spellCardName">Select spell</h3><p class="card-meta" id="spellInfo"></p><div class="card-actions"><button class="primary" id="cast">✦ CAST SPELL</button><button id="flipSpell">Rules / Results</button></div></article><article class="card-face card-back"><h3>Spell results and rules</h3><div class="card-roll" id="spellCardRoll">Cast to reveal the result.</div><button id="flipSpellBack">Return to artwork</button></article></div></div>
 </section>
 <section id="rules" class="panel hidden"><h2>Conditions, debuffs and damage</h2><p class="muted">These are 2014 5e reference examples. Other editions require their own rules and are not yet available.</p><label for="rule">Reference</label><select id="rule"></select><div id="ruleText" class="item"></div></section>
 <section id="dice" class="panel hidden"><h2>Secure dice</h2><div class="row"><label>Count <input type="number" id="diceCount" min="1" max="100" value="1"></label><label>Faces <select id="diceSides"><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option><option selected>20</option><option>100</option></select></label><label>Modifier <input type="number" id="diceMod" min="-1000" max="1000" value="0"></label></div><button class="primary" id="rollDice">Roll</button></section>
@@ -226,7 +241,7 @@ function flashAttackResult(critical,fumble){
   overlay.addEventListener('animationend',()=>overlay.classList.remove('flash-crit','flash-fumble'),{once:true});
  }catch(e){console.warn('Attack feedback animation unavailable',e)}
 }
-function display(s){output.textContent=String(s)+'\n\n'+output.textContent.slice(0,3000)}
+function display(s){const message=String(s);output.textContent=message+'\n\n'+output.textContent.slice(0,3000);if(document.getElementById('spells')&&!document.getElementById('spells').classList.contains('hidden'))$('spellCardRoll').textContent=message}
 function safe(fn){try{fn()}catch(e){console.error('Combat Companion error',e);display('ERROR: '+e.message)}}
 function save(){try{localStorage.setItem('cc-roster',JSON.stringify(roster))}catch(e){console.warn('Could not persist roster',e)}}
 function opt(sel,values){sel.replaceChildren();for(const [value,label] of values){const o=document.createElement('option');o.value=value;o.textContent=label;sel.append(o)}}
