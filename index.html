@@ -314,13 +314,29 @@ main{gap:5px;padding:6px 10px}
 @media(max-width:850px){.app-header{gap:9px}.app-header h1{display:none}.app-header .combat-toolbar{flex:1}}
 @media(max-width:550px){#monsters .flip-card{flex-basis:min(90vw,340px)}#monsters .monster-front{grid-template-rows:38px minmax(50px,100px) 25px 40px 82px 48px;gap:5px}#monsters .flip-card,#monsters .flip-inner{height:min(100%,420px)!important}}
 @media(max-height:650px){#monsters .flip-card,#monsters .flip-inner{height:min(100%,405px)!important}#monsters .monster-front{grid-template-rows:36px minmax(50px,90px) 23px 37px 77px 45px;gap:4px}#monsters .monster-front .result-grid{height:77px}#monsters .monster-front .card-actions,#monsters .monster-front .card-actions button.primary{height:45px}}
+
+/* Single header row, including contextual encounter picker. */
+.app-header{display:flex;align-items:center;flex-wrap:nowrap;gap:9px;padding:6px 10px;min-height:57px}
+.app-header h1{display:block;font-size:1rem;line-height:1.1;white-space:nowrap}
+.app-header .combat-toolbar{flex:0 1 auto;width:auto;min-width:0;gap:7px}
+.app-header .combat-toolbar #edition{flex:0 0 118px;width:118px;min-height:42px;padding:5px;font-size:.85rem}
+.app-header .combat-toolbar nav.tabs{flex:0 1 auto;gap:4px;overflow-x:auto}
+.app-header .combat-toolbar nav.tabs button{font-size:.86rem;padding:7px 9px;min-height:42px}
+.app-header .monster-picker{display:grid;grid-template-columns:78px minmax(125px,210px) 69px;gap:5px;align-items:center;flex:0 1 auto;min-width:0}
+.app-header .monster-picker select,.app-header .monster-picker #add{width:100%;min-width:0;min-height:42px;max-width:none;font-size:.87rem;padding:5px 7px}
+.app-header .monster-picker #add{padding:5px 7px;white-space:nowrap}
+@media(max-width:1100px){.app-header h1{display:none}.app-header{gap:5px}
+.app-header .monster-picker{grid-template-columns:65px minmax(100px,170px) 62px}}
+@media(max-width:780px){.app-header{overflow-x:auto;scrollbar-width:thin}
+.app-header .combat-toolbar{flex:none}.app-header .combat-toolbar nav.tabs{flex:none;overflow:visible}
+.app-header .monster-picker{flex:none;grid-template-columns:65px 135px 60px}}
 </style></head><body>
 <header class="app-header"><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p>
-<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav></div></header>
+<div class="combat-toolbar" role="group" aria-label="Edition and combat tools"><label for="edition" class="sr-only">D&D Edition</label><select id="edition"><option value="ODND">Original D&D (1974)</option><option value="BX">Basic / Expert</option><option value="ADND1">AD&D 1e</option><option value="ADND2">AD&D 2e</option><option value="3.0">D&D 3.0</option><option value="3.5">D&D 3.5</option><option value="4e">D&D 4e</option><option value="2014" selected>5e (2014)</option><option value="2024">5e (2024)</option></select><nav class="tabs" aria-label="Combat tools"><button data-tab="monsters" aria-pressed="true">Monsters</button><button data-tab="spells" aria-pressed="false">Spells</button><button data-tab="rules" aria-pressed="false">Debuffs &amp; Damage</button><button data-tab="dice" aria-pressed="false">Dice</button></nav></div><div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div></header>
 <main>
 <div class="warn" id="notice">Working website preview. Edition selectors are available, but only the explicitly listed sample cards have automatic rolls. Full nine-edition catalogs are still in development.</div>
 <section id="monsters" class="panel"><h2>Encounter monsters</h2>
-<div class="monster-picker" role="group" aria-label="Add an encounter monster"><label class="sr-only" for="cr">Challenge rating</label><select id="cr" aria-label="Challenge rating"></select><label class="sr-only" for="monster">Choose monster</label><select id="monster" aria-label="Choose monster"></select><button class="primary" id="add">+ Add</button></div>
+
 <h3>Encounter cards</h3><div id="roster" class="card-gallery" aria-live="polite"></div><div id="actions" class="hidden"></div>
 </section>
 <section id="spells" class="panel hidden"><h2>Spells</h2>
@@ -589,7 +605,7 @@ $('diceTray').onclick=()=>safe(()=>rollDicePool());
 $('diceTray').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();safe(()=>rollDicePool())}};
 updateDicePool();
 $('clear').onclick=()=>output.textContent='Results cleared.';
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)})});
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));document.querySelectorAll('main>section.panel').forEach(p=>{if(['monsters','spells','rules','dice'].includes(p.id))p.classList.toggle('hidden',p.id!==b.dataset.tab)});document.querySelector('.app-header .monster-picker').classList.toggle('hidden',b.dataset.tab!=='monsters')});
 edition.onchange=()=>{roster=[];selected=null;save();updateMonsters();updateSpells();render();$('ruleText').textContent='Reference entries below are 2014 5e examples. Edition-specific rules under construction.'};
 opt($('rule'),rules.map((r,i)=>[String(i),r[0]]));updateMonsters();updateSpells();$('rule').onchange();render();
 </script></body></html>
