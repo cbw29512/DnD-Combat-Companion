@@ -362,6 +362,7 @@ main{gap:5px;padding:6px 10px}
 .monster-condition-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;font-size:.9rem}
 .monster-condition-list button{min-height:36px;padding:3px 6px;font-size:.86rem;background:#5c3545;color:#fff2f2}
 .monster-resource-row{display:grid;grid-template-columns:minmax(0,1fr) 38px 38px;align-items:center;gap:4px;margin-top:3px}
+.monster-resource-row:has(button[aria-label^='Roll d6']){grid-template-columns:minmax(0,1fr) 38px 38px minmax(90px,auto)}
 .monster-resource-row span{font-size:.92rem}.monster-resource-row button{min-height:38px;padding:2px}
 .monster-rules-details{padding:7px;border:1px solid #52647a;border-radius:7px;flex:none}
 .monster-rules-details summary{cursor:pointer;font-weight:700;color:#f4d29a}
@@ -630,7 +631,7 @@ const CONDITIONS=['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grap
 function makeMonsterInstance(template,id,label){
  const maxHp=Number.isInteger(template.maxHp)?template.maxHp:template.hp;
  return {...template,id,name:label,maxHp,currentHp:maxHp,conditions:[],
-  resourceState:(template.resources||[]).map(r=>({name:r.name,max:r.max,remaining:r.max}))};
+  resourceState:(template.resources||[]).map(r=>({name:r.name,max:r.max,remaining:r.max,rechargeMin:r.rechargeMin||null}))};
 }
 function normalizeMonsterInstance(m){
  // In-place upgrade of encounter cards saved before limited-use resources existed.
@@ -648,7 +649,7 @@ function normalizeMonsterInstance(m){
  m.conditionRounds=Object.fromEntries(m.conditions.filter(x=>Number.isInteger(previousDurations[x])&&previousDurations[x]>0&&previousDurations[x]<=999).map(x=>[x,previousDurations[x]]));
  const stored=Array.isArray(m.resourceState)?m.resourceState:[];
  m.resourceState=(m.resources||[]).filter(r=>r&&typeof r.name==='string'&&Number.isInteger(r.max)&&r.max>0&&r.max<=1000)
-  .map(r=>{const old=stored.find(x=>x.name===r.name);return {name:r.name,max:r.max,remaining:Number.isInteger(old?.remaining)?Math.max(0,Math.min(r.max,old.remaining)):r.max}});
+  .map(r=>{const old=stored.find(x=>x.name===r.name);return {name:r.name,max:r.max,remaining:Number.isInteger(old?.remaining)?Math.max(0,Math.min(r.max,old.remaining)):r.max,rechargeMin:Number.isInteger(r.rechargeMin)&&r.rechargeMin>=2&&r.rechargeMin<=6?r.rechargeMin:null}});
  return m;
 }
 function adjustMonsterHp(m,delta){
@@ -666,6 +667,16 @@ function applyStartTurnRegeneration(m,blocked){
   m.currentHp=Math.min(m.maxHp,before+amount);
   save();return m.currentHp-before;
  }catch(e){console.warn('Regeneration failed',e);throw e}
+}
+function rollMonsterRecharge(m,resourceName){
+ try{
+  const entry=m.resourceState?.find(x=>x.name===resourceName);
+  if(!entry||!Number.isInteger(entry.rechargeMin)||entry.rechargeMin<2||entry.rechargeMin>6)throw Error('No d6 recharge configured.');
+  if(entry.remaining>=entry.max)return {roll:null,recharged:false,alreadyFull:true};
+  const result=secureDie(6);
+  if(result>=entry.rechargeMin)entry.remaining=entry.max;
+  save();return {roll:result,recharged:result>=entry.rechargeMin,alreadyFull:false};
+ }catch(e){console.warn('Recharge roll failed',e);throw e}
 }
 function restoreMonsterResources(m){
  try{
@@ -992,7 +1003,19 @@ function render(){
     down.disabled=item.remaining===0;up.disabled=item.remaining>=item.max;
     down.onclick=()=>{item.remaining=Math.max(0,item.remaining-1);save();refreshResources()};
     up.onclick=()=>{item.remaining=Math.min(item.max,item.remaining+1);save();refreshResources()};
-    row.append(title,down,up);resourceList.append(row);
+    row.append(title,down,up);
+    if(item.rechargeMin){
+     const recharge=document.createElement('button');recharge.textContent='Recharge '+item.rechargeMin+'–6';
+     recharge.disabled=item.remaining>=item.max;
+     recharge.setAttribute('aria-label','Roll d6 recharge for '+item.name);
+     recharge.onclick=()=>{try{const result=rollMonsterRecharge(m,item.name);refreshResources();
+      const notice=document.createElement('div');notice.className='card-meta';notice.setAttribute('role','status');
+      notice.textContent=result.alreadyFull?'Already ready':('Recharge d6: '+result.roll+(result.recharged?' — restored':' — not restored'));
+      resourceList.prepend(notice);
+     }catch(e){console.warn('Recharge UI failed',e);alert(e.message)}};
+     row.append(recharge);
+    }
+    resourceList.append(row);
    }
   };
   const restoreAll=document.createElement('button');restoreAll.textContent='Restore all uses (DM)';
