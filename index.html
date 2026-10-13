@@ -20,6 +20,17 @@
 #spellCard{max-width:410px;margin:16px auto;min-height:420px}#spellCard .flip-inner{min-height:420px}
 #spellCard .card-art{height:175px}
 @media(prefers-reduced-motion:reduce){.flip-inner{transition:none}}
+
+.flip-card,.flip-inner{min-height:320px}.card-face{overflow:hidden;display:flex;flex-direction:column;gap:7px}
+.card-art{height:115px;flex:none;font-size:52px}.card-name{margin:3px 0}.card-meta{margin:2px 0}
+.card-actions{margin-top:auto}.card-actions button{font-weight:700}
+.card-roll{font-size:1rem;white-space:normal;overflow-wrap:anywhere;line-height:1.4;margin:7px 0}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.result-num{background:#293b50;border:1px solid #657b91;border-radius:10px;text-align:center;padding:13px 6px}
+.result-num strong{display:block;font-size:2.1rem;line-height:1.2;color:white}
+.result-num small{display:block;font-size:.75rem}
+.card-back .card-actions{margin-top:auto}
+@media(max-width:550px){.card-gallery{grid-template-columns:repeat(auto-fill,minmax(245px,1fr))}}
 </style></head><body>
 <header><h1>D&D Combat Companion</h1><p>DM-first combat aid · Live browser preview</p></header>
 <main>
@@ -92,30 +103,47 @@ function updateSpellDetails(){const s=spells[Number($('spell').value)];$('spellC
 function render(){
  const root=$('roster');root.replaceChildren();
  for(const m of roster){
-  const outer=document.createElement('div');outer.className='flip-card';outer.dataset.id=m.id;
+  const card=document.createElement('div');card.className='flip-card';
   const inner=document.createElement('div');inner.className='flip-inner';
   const front=document.createElement('article');front.className='card-face';
-  const art=document.createElement('div');art.className='card-art';art.textContent=/dragon/i.test(m.name)?'🐉':/wolf/i.test(m.name)?'🐺':/skeleton/i.test(m.name)?'☠':/zombie/i.test(m.name)?'🧟':/ogre/i.test(m.name)?'👹':'⚔';art.setAttribute('aria-hidden','true');
-  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
-  const meta=document.createElement('p');meta.className='card-meta';meta.textContent='CR '+m.cr+' · AC '+m.ac+' · HP '+m.hp;
-  const controls=document.createElement('div');controls.className='card-actions';
-  const attack=document.createElement('button');attack.className='primary';attack.textContent='⚔ ATTACK';
-  const flip=document.createElement('button');flip.textContent='Flip / Abilities';flip.onclick=()=>outer.classList.add('flipped');
-  const duplicate=document.createElement('button');duplicate.textContent='+ Copy';duplicate.onclick=()=>safe(()=>{if(roster.length>=100)throw Error('Encounter limited to 100 monsters');const copy={...m,id:'m'+Date.now().toString(36)+secureDie(1000000).toString(36),name:m.name.replace(/ #\\d+$/,'')+' #'+(roster.filter(x=>x.name.startsWith(m.name.replace(/ #\\d+$/,'')+' #')).length+1)};roster.push(copy);selected=copy.id;save();render()});
-  const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render()};
   const back=document.createElement('article');back.className='card-face card-back';
-  const title=document.createElement('h3');title.textContent=m.name+' — abilities';back.append(title);
-  const actionsText=document.createElement('p');actionsText.className='card-meta';actionsText.textContent=(m.actions||[]).map(x=>x.name+' +'+x.toHit+' · '+x.dice[0]+'d'+x.dice[1]+'+'+x.dice[2]+' '+x.type).join(' | ');back.append(actionsText);
-  const result=document.createElement('div');result.className='card-roll';result.textContent='Tap ATTACK to roll the chosen attack. DM determines hits and targets.';
-  const choose=document.createElement('select');choose.setAttribute('aria-label','Attack routine for '+m.name);
-  opt(choose,(m.actions||[]).map((x,i)=>[String(i),x.name]));
-  const resolve=()=>safe(()=>{const x=m.actions[Number(choose.value)];if(!x)throw Error('Attack not available');const h=roll(1,20,x.toHit),d=roll(...x.dice);const msg=m.name+' — '+x.name+'\\nTo hit: ['+h.dice.join(', ')+'] + '+x.toHit+' = '+h.total+'\\nPotential damage: ['+d.dice.join(', ')+'] + '+d.bonus+' = '+d.total+' '+x.type+'\\nDM decides hit, target, and damage.';result.textContent=msg;display(msg);selected=m.id;outer.classList.add('flipped')});
-  attack.onclick=resolve;
-  const backAttack=document.createElement('button');backAttack.className='primary';backAttack.textContent='⚔ ATTACK';backAttack.onclick=resolve;
-  const backFlip=document.createElement('button');backFlip.textContent='Return to artwork';backFlip.onclick=()=>outer.classList.remove('flipped');
-  controls.append(attack,flip,duplicate,remove);front.append(art,name,meta,choose,controls);
-  back.append(result,backAttack,document.createTextNode(' '),backFlip);
-  inner.append(front,back);outer.append(inner);root.append(outer);
+  const art=document.createElement('div');art.className='card-art';art.setAttribute('aria-hidden','true');art.textContent=/wolf/i.test(m.name)?'🐺':/skeleton/i.test(m.name)?'☠':/zombie/i.test(m.name)?'🧟':/ogre/i.test(m.name)?'👹':'⚔';
+  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;
+  const stats=document.createElement('div');stats.className='card-meta';stats.textContent='AC '+m.ac+'  •  HP '+m.hp+'  •  CR '+m.cr;
+  const select=document.createElement('select');select.setAttribute('aria-label','Attack for '+m.name);
+  opt(select,(m.actions||[]).map((a,i)=>[String(i),a.name]));
+  const result=document.createElement('div');result.className='result-grid';
+  const hit=document.createElement('div');hit.className='result-num';hit.innerHTML='<small>TO HIT</small><strong>—</strong>';
+  const damage=document.createElement('div');damage.className='result-num';damage.innerHTML='<small>DAMAGE</small><strong>—</strong>';
+  result.append(hit,damage);
+  const attack=document.createElement('button');attack.className='primary';attack.textContent='⚔ ATTACK';
+  attack.onclick=()=>safe(()=>{
+   const a=m.actions[Number(select.value)];if(!a)throw Error('Choose an attack first');
+   const h=roll(1,20,a.toHit),d=roll(...a.dice);
+   hit.querySelector('strong').textContent=h.total;
+   damage.querySelector('strong').textContent=d.total;
+   damage.querySelector('small').textContent='DAMAGE · '+a.type;
+   display(m.name+' — '+a.name+': To hit '+h.total+'; potential damage '+d.total+' '+a.type+'. DM decides outcome.');
+  });
+  const detail=document.createElement('button');detail.textContent='Rules';detail.onclick=()=>card.classList.add('flipped');
+  const duplicate=document.createElement('button');duplicate.textContent='+ Copy';duplicate.onclick=()=>safe(()=>{
+   if(roster.length>=100)throw Error('Encounter limited to 100 monsters');
+   const base=m.name.replace(/ #\\d+$/,'');
+   const copy={...m,id:'m'+Date.now().toString(36)+secureDie(1000000).toString(36),name:base+' #'+(roster.filter(x=>x.name.startsWith(base+' #')).length+1)};
+   roster.push(copy);selected=copy.id;save();render();
+  });
+  const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{
+   roster=roster.filter(x=>x.id!==m.id);if(selected===m.id)selected=roster[0]?.id||null;save();render();
+  };
+  const controls=document.createElement('div');controls.className='card-actions';controls.append(attack,detail,duplicate,remove);
+  front.append(art,name,stats,select,result,controls);
+  const heading=document.createElement('h3');heading.className='card-name';heading.textContent=m.name+' — Rules';
+  const rules=document.createElement('div');rules.className='card-meta';
+  rules.textContent=(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+'+'+a.dice[2]+' '+a.type).join('\\n');
+  rules.style.whiteSpace='pre-line';
+  const flipBack=document.createElement('button');flipBack.textContent='Back to card';flipBack.onclick=()=>card.classList.remove('flipped');
+  back.append(heading,rules,flipBack);
+  inner.append(front,back);card.append(inner);root.append(card);
  }
 }
 function addMonster(){const source=monsters[Number($('monster').value)];if(!source)return;const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m={...source,id,name:source.name+' #'+count};if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
