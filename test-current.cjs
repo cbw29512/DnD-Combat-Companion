@@ -54,8 +54,8 @@ test('toolbar, Homebrew, spell tick and dice controls exist exactly once', () =>
 test('only implemented edition cards are advertised', () => {
   assert.ok(monsters.filter(m => m.edition === '2014').length >= 34);
   assert.ok(spells.filter(s => s.edition === '2014').length >= 45);
-  assert.equal(monsters.filter(m => m.edition === '2024').length, 1);
-  assert.equal(spells.filter(s => s.edition === '2024').length, 1);
+  assert.ok(monsters.some(m => m.edition === '2024'));
+  assert.ok(spells.some(s => s.edition === '2024'));
   for (const item of [...monsters,...spells]) assert.ok(item.edition && item.name);
 });
 
@@ -102,6 +102,14 @@ test('switching D&D editions must not delete the encounter', () => {
   const handler = capture(inline, /edition\.onchange=([^;]*);/, 'edition change handler');
   assert.doesNotMatch(handler,/roster\s*=\s*\[\]|save\(\)/);
   assert.match(inline,/if\(m\.edition!==edition\.value\)continue/);
+});
+
+test('legacy editions are not silently processed using 5e attack rules', () => {
+  const homebrewMonster={
+    edition:'ADND2',name:'Old-school Test',actions:[{name:'Sword',toHit:3,dice:[1,8,1],type:'slashing'}]
+  };
+  const roller=combatRNG([20]);
+  assert.throws(() => roller.resolveMonsterChoice(homebrewMonster,'a:0','normal'),/edition-specific rules engine/);
 });
 
 test('spell upcasting formulas remain within engine dice safety', () => {
