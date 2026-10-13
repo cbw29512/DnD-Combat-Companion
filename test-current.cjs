@@ -262,3 +262,13 @@ test('generic d6 recharge uses only configured resources and restores on thresho
     assert.throws(()=>recharge(monster,'Spikes'),/No d6 recharge/);
   }
 });
+
+test('concentration damage DC follows half damage with minimum ten', () => {
+  const start=inline.indexOf('function concentrationDamageDC(');
+  const end=inline.indexOf('function concentrationDecision(',start);
+  assert.ok(start>=0 && end>start);
+  const dc=vm.runInNewContext(inline.slice(start,end)+';concentrationDamageDC',{console});
+  for(const [damage,expected] of [[0,10],[1,10],[20,10],[21,10],[30,15],[53,26]])
+    assert.equal(dc(damage),expected);
+  for(const invalid of [-1,1.5,100000,NaN])assert.throws(()=>dc(invalid),/Enter damage/);
+});
