@@ -152,7 +152,8 @@
     const monster = $('hb-kind').value === 'monster';
     $('hb-monster-fields').hidden = !monster;
     $('hb-spell-fields').hidden = monster;
-    $('hb-upcast').disabled = !$('hb-level').value || $('hb-level').value === '9';
+    $('hb-upcast').disabled = $('hb-level').value === '0' || $('hb-level').value === '9';
+    if ($('hb-upcast').disabled) $('hb-upcast').checked = false;
     const damage = $('hb-damage-enabled').checked;
     $('hb-damage-fields').hidden = !damage;
   }
