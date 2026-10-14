@@ -272,3 +272,21 @@ test('concentration damage DC follows half damage with minimum ten', () => {
     assert.equal(dc(damage),expected);
   for(const invalid of [-1,1.5,100000,NaN])assert.throws(()=>dc(invalid),/Enter damage/);
 });
+
+test('advance all timed conditions is per monster and preserves manual effects', () => {
+  const start=inline.indexOf('function advanceAllConditionRounds(');
+  const end=inline.indexOf('function monsterAttackCosts(',start);
+  assert.ok(start>=0 && end>start);
+  let saves=0;
+  const advance=vm.runInNewContext(inline.slice(start,end)+';advanceAllConditionRounds',{save:()=>{saves++},console});
+  const first={conditions:['Prone','Poisoned','Stunned'],conditionRounds:{Poisoned:2,Stunned:1}};
+  const second={conditions:['Poisoned'],conditionRounds:{Poisoned:5}};
+  assert.deepEqual(Array.from(advance(first)),['Stunned']);
+  assert.deepEqual(Array.from(first.conditions),['Prone','Poisoned']);
+  assert.equal(first.conditionRounds.Poisoned,1);
+  assert.equal(first.conditionRounds.Stunned,undefined);
+  assert.equal(second.conditionRounds.Poisoned,5);
+  assert.deepEqual(Array.from(advance(first)),['Poisoned']);
+  assert.deepEqual(Array.from(first.conditions),['Prone']);
+  assert.equal(saves,2);
+});
