@@ -710,6 +710,22 @@ function advanceConditionRounds(m,condition){
  else m.conditionRounds[condition]=old-1;
  save();return old-1;
 }
+function advanceAllConditionRounds(m){
+ try{
+  if(!Array.isArray(m.conditions))throw Error('Invalid monster condition state.');
+  const expired=[];
+  m.conditionRounds=m.conditionRounds||{};
+  for(const name of [...m.conditions]){
+   const remaining=m.conditionRounds[name];
+   // Manual and source-dependent durations are deliberately not advanced.
+   if(!Number.isInteger(remaining)||remaining<1)continue;
+   if(remaining===1){expired.push(name);delete m.conditionRounds[name]}
+   else m.conditionRounds[name]=remaining-1;
+  }
+  if(expired.length)m.conditions=m.conditions.filter(name=>!expired.includes(name));
+  save();return expired;
+ }catch(e){console.warn('Condition round advance failed',e);throw e}
+}
 function monsterAttackCosts(m,choice){
  const match=/^([ar]):(\d+)$/.exec(String(choice));
  if(!match)throw Error('Select an attack.');
@@ -1010,7 +1026,12 @@ function render(){
    }
   };
   addCondition.onclick=()=>{toggleMonsterCondition(m,conditionChooser.value);refreshConditions();refreshStats()};
-  conditionTools.append(conditionTitle,conditionChooser,addCondition,conditionList);refreshConditions();
+  const advanceRound=document.createElement('button');advanceRound.textContent='Advance timed conditions −1 round';
+  advanceRound.title='DM-controlled: advance all numbered condition timers on this monster';
+  advanceRound.onclick=()=>{try{const expired=advanceAllConditionRounds(m);refreshConditions();refreshStats();
+   if(expired.length)display(m.name+': expired '+expired.join(', '));
+  }catch(e){console.warn('Condition advance failed',e);alert(e.message)}};
+  conditionTools.append(conditionTitle,conditionChooser,addCondition,conditionList,advanceRound);refreshConditions();
   const resourceTools=document.createElement('div');resourceTools.className='monster-state-tools';
   const resourceTitle=document.createElement('strong');resourceTitle.textContent='Limited uses (DM managed)';
   const resourceList=document.createElement('div');resourceList.className='monster-resource-list';
