@@ -15,6 +15,10 @@ https://cbw29512.github.io/DnD-Combat-Companion/
 - **Homebrew:** create/edit/copy/delete/use custom monsters and spells, monster attack profiles and multiattack sequences, spell concentration flags, JSON import/export; persisted in **this browser's localStorage**, not server-synchronized.
 - **Encounter persistence:** switching editions preserves each edition's cards. Monster current HP, conditions, limited resources, and per-caster concentration persist locally.
 
+## Master requested scope
+
+See [the consolidated Combat Companion requirements](docs/REQUESTED_FEATURES_MASTER.md) for the full requested D&D catalog, conditions, spell data, dice, homebrew, card accessibility, two-screen workflow, acceptance scenarios, and what remains unimplemented. This contract is a development specification, not a feature-completion claim.
+
 ## Known incomplete work
 
 1. **2014:** extend verified monster library, spell library, multiattack/special-ability resolution, saving throws, target HP adjudication, condition durations, and automated recharge/regeneration where accurately modeled.
