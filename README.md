@@ -9,7 +9,7 @@ https://cbw29512.github.io/DnD-Combat-Companion/
 - **2014 5e:** 38 monster cards and 45 spell entries (including simple non-damage effects). Nine monsters support an explicit one-click Multiattack routine; many other specials are DM-resolved.
 - **2024 5e:** two SRD monsters (Goblin Minion and Goblin Warrior) and four spells (Fireball, Magic Missile, Shield, Bless). Full 2024 support is **not complete**.
 - **Other editions:** listed in the edition picker for planning and editable Homebrew references, but edition-specific combat math is not yet implemented. Automatic monster attacks are intentionally disabled for unsupported editions.
-- **Combat cards:** edition/CR/monster toolbar, independent monster instances with editable current HP, manually managed conditions and limited-use resources, normal/ADV/DIS attacks, natural 20/1 feedback, and potential damage. DM decides hits, targets, saving throws, and HP changes.
+- **Combat cards:** edition/CR/monster toolbar, visibly numbered independent monster instances with editable current HP, manually managed conditions and limited-use resources, normal/ADV/DIS attacks, natural 20/1 feedback, and potential damage. DM decides hits, targets, saving throws, and HP changes. Removing and adding cards preserves unique labels; older duplicate labels recover without changing instance IDs or combat state. Rotated-away card faces are excluded from keyboard navigation and assistive technology.
 - **Spells:** automatic dice for supported damaging spells, upcasting where defined, Magic Missile darts, repeatable damage triggers for Cloud of Daggers and Moonbeam, and caster-scoped concentration tracking with manual End button.
 - **Dice:** Web Crypto secure sampling, dice pools, advantage/disadvantage, total and d20 critical/fumble feedback.
 - **Homebrew:** create/edit/copy/delete/use custom monsters and spells, monster attack profiles and multiattack sequences, spell concentration flags, JSON import/export; persisted in **this browser's localStorage**, not server-synchronized.
@@ -30,13 +30,15 @@ See [the consolidated Combat Companion requirements](docs/REQUESTED_FEATURES_MAS
 
 ## Tests
 
-The current GitHub Pages site lives in root `index.html`, with `homebrew.js` and `homebrew.css`.
+The current GitHub Pages site lives in root `index.html`, with `homebrew.js`, `homebrew.css`, `encounter-identity.js`, and `card-faces.js`.
 
 Run the current smoke/regression suite on Node 22:
 
 ```sh
 node --check homebrew.js
-node --test test-current.cjs
+node --check encounter-identity.js
+node --check card-faces.js
+node --test test-current.cjs test-encounter-identity.cjs test-card-faces.cjs
 ```
 
 The GitHub Actions workflow `.github/workflows/ci.yml` runs these checks on push and pull requests. The former `test-safety.js` references a separate V2.1 `netlify-site` architecture that has **not been imported**, and is not used to certify this web preview.
