@@ -500,6 +500,8 @@ main{gap:5px;padding:6px 10px}
 <small>Randomness: Web Crypto with rejection sampling. No automatic target selection or HP subtraction. Encounter cards and concentration are saved in this browser. Homebrew JSON backups are recommended. Rules data adapted from Wizards of the Coast's <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">SRD 5.1 and 5.2.1</a>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</small>
 </main>
 <div id="attack-flash" aria-hidden="true"></div>
+<script src="./encounter-identity.js?v=1"></script>
+<script src="./card-faces.js?v=1"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),edition=$('edition'),output=$('output');
@@ -629,6 +631,7 @@ const rules=[
 ];
 let roster=[];try{const d=JSON.parse(localStorage.getItem('cc-roster')||'[]');if(Array.isArray(d))roster=d.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string'&&typeof x.edition==='string'&&Array.isArray(x.actions)).slice(0,100)}catch(e){console.warn('Roster recovery failed',e)}
 let selected=null;
+if(CombatEncounterIdentity.repairDuplicateNames(roster))save();
 
 const CONDITIONS=['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
 function makeMonsterInstance(template,id,label){
@@ -832,7 +835,7 @@ $('endConcentration').onclick=()=>{const spell=getConcentration(edition.value,$(
 
 function updateSpellDetails(){
  const key=$('spell').value,s=key===''?null:spells[Number(key)];
- $('spellCard').classList.remove('flipped');$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';
+ CombatCardFaces.setCardFace($('spellCard'),false);$('spellTotalValue').textContent='—';$('spellTotalType').textContent='Cast a spell to roll';
  $('spellCardName').textContent=s?.name||'No spell available';$('upcastArea').classList.toggle('hidden',!s?.upcast);
  $('rollSpellTick').classList.toggle('hidden',!s?.triggered);$('spellCard').classList.toggle('has-trigger',!!s?.triggered);
  $('cast').textContent=s?.triggered?'✦ PLACE':'✦ CAST SPELL';$('flipSpell').textContent=s?.triggered?'RULES':'Rules / Results';
@@ -914,8 +917,8 @@ function render(){
   const inner=document.createElement('div');inner.className='flip-inner';
   const front=document.createElement('article');front.className='card-face monster-front';
   const back=document.createElement('article');back.className='card-face card-back';
-  const art=document.createElement('div');art.className='card-art';art.setAttribute('role','button');art.tabIndex=0;art.title='Tap artwork to show rules';art.setAttribute('aria-label','Show rules for '+m.name);art.append(makeMonsterSilhouette(m.name));art.onclick=()=>card.classList.add('flipped');art.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.classList.add('flipped')}};
-  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name.replace(/ #\d+$/,'');name.title=m.name;
+  const art=document.createElement('div');art.className='card-art';art.setAttribute('role','button');art.tabIndex=0;art.title='Tap artwork to show rules';art.setAttribute('aria-label','Show rules for '+m.name);art.append(makeMonsterSilhouette(m.name));art.onclick=()=>CombatCardFaces.setCardFace(card,true,true);art.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();CombatCardFaces.setCardFace(card,true,true)}};
+  const name=document.createElement('h3');name.className='card-name';name.textContent=m.name;name.title=m.name;
   const stats=document.createElement('div');stats.className='card-meta';
   const refreshStats=()=>{
    stats.textContent='AC '+m.ac+'  •  HP '+m.currentHp+'/'+m.maxHp+'  •  CR '+m.cr+
@@ -967,7 +970,7 @@ function render(){
   const duplicate=document.createElement('button');duplicate.textContent='+';duplicate.title='Duplicate';duplicate.setAttribute('aria-label','Duplicate '+m.name);duplicate.onclick=()=>safe(()=>{
    if(roster.length>=100)throw Error('Encounter limited to 100 monsters');
    const base=m.name.replace(/ #\d+$/,'');
-   const copy=makeMonsterInstance(m,'m'+Date.now().toString(36)+secureDie(1000000).toString(36),base+' #'+(roster.filter(x=>x.name.startsWith(base+' #')).length+1));
+   const copy=makeMonsterInstance(m,'m'+Date.now().toString(36)+secureDie(1000000).toString(36),CombatEncounterIdentity.nextMonsterName(base,roster));
    roster.push(copy);selected=copy.id;save();render();
   });
   const remove=document.createElement('button');remove.textContent='🗑';remove.title='Remove';remove.setAttribute('aria-label','Remove '+m.name);remove.onclick=()=>{
@@ -986,7 +989,7 @@ function render(){
   const rules=document.createElement('div');rules.className='card-meta';
   rules.textContent=(m.multiattacks||[]).map(r=>r.name+': '+r.sequence.map(i=>m.actions[i]?.name||'Missing attack').join(' + ')).join('\n')+'\n'+(m.actions||[]).map(a=>a.name+': +'+a.toHit+' to hit; '+a.dice[0]+'d'+a.dice[1]+(a.dice[2]>=0?'+':'')+a.dice[2]+' '+a.type+(a.onHit?'\n  On hit: '+a.onHit:'')).join('\n')+(m.traits?'\n\nTRAITS (DM resolves):\n'+m.traits:'');
   rules.style.whiteSpace='pre-line';
-  const flipBack=document.createElement('button');flipBack.textContent='Back to card';flipBack.onclick=()=>card.classList.remove('flipped');
+  const flipBack=document.createElement('button');flipBack.textContent='Back to card';flipBack.onclick=()=>CombatCardFaces.setCardFace(card,false,true);
   const hpTools=document.createElement('div');hpTools.className='monster-state-tools';
   const hpTitle=document.createElement('strong');hpTitle.textContent='Current HP: '+m.currentHp+' / '+m.maxHp;
   const hpAmount=document.createElement('input');hpAmount.type='number';hpAmount.min='1';hpAmount.max='99999';hpAmount.value='1';
@@ -1078,12 +1081,12 @@ function render(){
   const summary=document.createElement('summary');summary.textContent='Printed attacks and traits';
   ruleDetails.append(summary,rules);
   back.append(heading,hpTools,conditionTools,resourceTools,ruleDetails,flipBack);
-  inner.append(front,back);card.append(inner);root.append(card);
+  inner.append(front,back);card.append(inner);CombatCardFaces.setCardFace(card,false);root.append(card);
  }
 }
-function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const count=roster.filter(x=>x.name.startsWith(source.name+' #')).length+1;const m=makeMonsterInstance(source,id,source.name+' #'+count);if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
+function addMonster(){const v=$('monster').value;if(v==='')throw Error('No monster available for this edition');const source=monsters[Number(v)];if(!source||source.edition!==edition.value)throw Error('Choose a valid monster for this edition');const id='m'+Date.now().toString(36)+secureDie(1000000).toString(36);const m=makeMonsterInstance(source,id,CombatEncounterIdentity.nextMonsterName(source.name,roster));if(roster.length>=100)throw Error('Encounter limited to 100 monsters');roster.push(m);selected=id;save();render()}
 $('cr').onchange=updateMonsterList;$('add').onclick=()=>safe(addMonster);
-$('flipSpell').onclick=()=>$('spellCard').classList.add('flipped');$('flipSpellBack').onclick=()=>$('spellCard').classList.remove('flipped');$('spell').onchange=updateSpellDetails;$('slot').onchange=()=>{const key=$('spell').value,s=key===''?null:spells[Number(key)];if(s?.specialAtLevel)$('spellInfo').textContent=s.specialAtLevel(Number($('slot').value))};$('cast').onclick=()=>safe(()=>{
+$('flipSpell').onclick=()=>CombatCardFaces.setCardFace($('spellCard'),true,true);$('flipSpellBack').onclick=()=>CombatCardFaces.setCardFace($('spellCard'),false,true);$('spell').onchange=updateSpellDetails;$('slot').onchange=()=>{const key=$('spell').value,s=key===''?null:spells[Number(key)];if(s?.specialAtLevel)$('spellInfo').textContent=s.specialAtLevel(Number($('slot').value))};$('cast').onclick=()=>safe(()=>{
  const v=$('spell').value,s=v===''?null:spells[Number(v)];
  if(!s||s.edition!==edition.value){display('No verified spell selected');return}
  const level=s.upcast?Number($('slot').value):s.base;

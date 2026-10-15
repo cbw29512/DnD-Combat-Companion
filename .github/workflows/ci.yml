@@ -17,9 +17,13 @@ jobs:
           test -s homebrew.js
           test -s homebrew.css
           test -s test-current.cjs
+          test -s encounter-identity.js
+          test -s card-faces.js
       - name: Check JavaScript syntax
         run: |
           node --check homebrew.js
           node --check test-current.cjs
+          node --check encounter-identity.js
+          node --check card-faces.js
       - name: Test current GitHub Pages app
-        run: node --test test-current.cjs
+        run: node --test test-current.cjs test-encounter-identity.cjs test-card-faces.cjs
