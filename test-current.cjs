@@ -203,11 +203,17 @@ test('caster concentration replaces per-caster spells but preserves another cast
   const dom={
     spellCaster:{value:'Caster 1'},
     concentrationStatus:{textContent:''},
-    endConcentration:{disabled:true}
+    endConcentration:{disabled:true},
+    // The concentration section also wires these current UI controls on load.
+    concentrationDamage:{value:'0'},
+    concentrationDC:{textContent:'DC 10'},
+    concentrationPass:{},
+    concentrationFail:{}
   };
+  const messages=[];
   const methods=vm.runInNewContext(inline.slice(start,end)+';({setConcentration,getConcentration,endConcentration,refreshConcentration})',{
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(k,v)=>storage.set(k,v)},
-    $:id=>dom[id],edition:{value:'2014'},console:{warn:()=>{}},display:()=>{}
+    $:id=>dom[id],edition:{value:'2014'},console:{warn:()=>{}},display:message=>messages.push(message)
   });
   methods.setConcentration('2014','Caster 1','Bless',1);
   methods.setConcentration('2014','Caster 2','Moonbeam',2);
@@ -216,8 +222,19 @@ test('caster concentration replaces per-caster spells but preserves another cast
   assert.equal(methods.getConcentration('2014','Caster 1').spell,'Bane');
   assert.equal(methods.getConcentration('2014','Caster 2').spell,'Moonbeam');
   assert.equal(methods.getConcentration('2024','Caster 1'),null);
-  assert.equal(methods.endConcentration('2014','Caster 1'),true);
+  // Exercise the real input and DM-confirmation handlers as well as state replacement.
+  dom.concentrationDamage.value='24';dom.concentrationDamage.oninput();
+  assert.equal(dom.concentrationDC.textContent,'DC 12');
+  dom.concentrationDamage.value='-1';dom.concentrationDamage.oninput();
+  assert.equal(dom.concentrationDC.textContent,'Invalid damage');
+  dom.concentrationDamage.value='24';dom.concentrationDamage.oninput();
+  dom.concentrationPass.onclick();
+  assert.equal(methods.getConcentration('2014','Caster 1').spell,'Bane');
+  assert.match(messages.at(-1),/maintained Bane.*DC 12/);
+  dom.concentrationFail.onclick();
   assert.equal(methods.getConcentration('2014','Caster 1'),null);
+  assert.equal(methods.getConcentration('2014','Caster 2').spell,'Moonbeam');
+  assert.match(messages.at(-1),/lost concentration on Bane.*DC 12/);
   assert.ok(storage.get('cc-concentration-v1').includes('Moonbeam'));
 });
 
